@@ -1,49 +1,55 @@
 {
-  "name": "szod",
-  "version": "0.1.0",
-  "description": "Type-safe serialization for Zod",
-  "scripts": {
-    "check:style": "prettier --check src",
-    "check:lint": "eslint src/**",
-    "check:types": "tsc --noEmit",
-    "test": "vitest",
-    "build": "node build.js",
-    "prepare": "husky install"
-  },
+  "name": "zodex",
+  "version": "0.0.0-dev",
+  "description": "Type-safe (de)serialization for Zod",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "keywords": [
     "zod",
-    "serialization"
+    "serialization",
+    "deserialization",
+    "reflection"
   ],
   "author": "Gregor Weber<mail@dflate.io>",
   "license": "MIT",
+  "scripts": {
+    "prepare": "husky install",
+    "check-style": "prettier --check src",
+    "lint": "eslint src/**",
+    "test": "vitest",
+    "build": "rm -rf dist && tsc",
+    "prepublish": "npm run build"
+  },
   "peerDependencies": {
-    "@types/react": "^18.0.29",
-    "react": "^18.2.0",
-    "zod": "^3.20.0"
+    "@types/react": "^18.x",
+    "react": "^18.x",
+    "zod": "^3.x"
   },
   "dependencies": {
-    "type-fest": "^3.7.1"
+    "react": "18.2.0",
+    "type-fest": "3.7.1",
+    "zod": "3.21.4"
   },
   "devDependencies": {
-    "@types/react": "^18.0.29",
-    "@typescript-eslint/eslint-plugin": "^5.56.0",
-    "@typescript-eslint/parser": "^5.56.0",
-    "esbuild": "^0.17.14",
-    "eslint": "^8.36.0",
-    "eslint-config-prettier": "^8.8.0",
-    "npm-dts": "^1.3.12",
-    "prettier": "^2.8.7",
-    "typescript": "^5.0.2",
-    "vitest": "0.29.7"
+    "@commitlint/cli": "17.5.1",
+    "@commitlint/config-conventional": "17.4.4",
+    "@types/react": "18.0.31",
+    "@typescript-eslint/eslint-plugin": "5.57.0",
+    "@typescript-eslint/parser": "5.57.0",
+    "esbuild": "0.17.14",
+    "eslint": "8.37.0",
+    "eslint-config-prettier": "8.8.0",
+    "husky": "8.0.3",
+    "lint-staged": "13.2.0",
+    "prettier": "2.8.7",
+    "typescript": "5.0.2",
+    "vitest": "0.29.8"
   },
   "files": [
     "dist/*"
   ],
-  "module": "dist/index.esm.js",
-  "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
   "lint-staged": {
-    "*.js": "eslint --cache --fix",
-    "*.{js,css,md}": "prettier --write"
+    "*.ts": "eslint --cache --fix src/**",
+    "*.{ts,js,json,md}": "prettier --write"
   }
 }
