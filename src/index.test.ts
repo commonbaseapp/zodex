@@ -1,9 +1,9 @@
 import { expect, test } from "vitest";
 import { z } from "zod";
 
-import { sz } from ".";
+import { getDefaultValue, SzInfer, zerialize } from "./";
 
-const s = sz.serialize;
+const s = zerialize;
 test.each([
   [s(z.string()) satisfies { type: "string" }, { type: "string" }],
   [s(z.number()) satisfies { type: "number" }, { type: "number" }],
@@ -100,9 +100,14 @@ test.each([
   [
     s(z.record(z.literal(42))) satisfies {
       type: "record";
+      key: { type: "string" };
       value: { type: "literal"; value: 42 };
     },
-    { type: "record", value: { type: "literal", value: 42 } },
+    {
+      type: "record",
+      key: { type: "string" },
+      value: { type: "literal", value: 42 },
+    },
   ],
 
   [
@@ -146,18 +151,12 @@ test.each([
   ],
 
   [
-    s(z.string().catch("Safe").brand<"Test">()) satisfies {
-      type: "catch";
-      // value: string;
-    },
-    {
-      type: "catch",
-      // value: "Safe",
-    },
-  ],
-
-  [
-    s(z.number().pipe(z.promise(z.literal(42)))) satisfies {
+    s(
+      z
+        .number()
+        .catch(23)
+        .pipe(z.promise(z.literal(42)))
+    ) satisfies {
       type: "promise";
       value: { type: "literal"; value: 42 };
     },
@@ -174,7 +173,7 @@ test("discriminated union", () => {
       z.object({ name: z.literal("Lea"), reach: z.number() }),
     ])
     .default({ name: "Lea", reach: 42 });
-  const result = sz.serialize(discUnion);
+  const result = zerialize(discUnion);
   result satisfies {
     type: "discriminatedUnion";
     discriminator: "name";
@@ -195,7 +194,7 @@ test("discriminated union", () => {
       }
     ];
   };
-  type InfType = sz.Infer<typeof result>;
+  type InfType = SzInfer<typeof result>;
   ({}) as InfType satisfies
     | { name: "Gregor"; age?: number }
     | { name: "Lea"; reach: number };
@@ -224,7 +223,7 @@ test("discriminated union", () => {
     defaultValue: { name: "Lea", reach: 42 },
   });
 
-  const shapeDefault = sz.getDefaultValue(result);
-  shapeDefault satisfies InfType;
+  const shapeDefault = getDefaultValue(result);
+  // shapeDefault satisfies InfType;
   expect(shapeDefault).toEqual({ name: "Lea", reach: 42 });
 });

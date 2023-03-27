@@ -1,0 +1,10 @@
+name: "node"
+description: "Node.js & npm setup"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-node@v3
+      with:
+        node-version: "18.x"
+        registry-url: "https://registry.npmjs.org"
+    - uses: bahmutov/npm-install@v1

@@ -1,9 +1,3 @@
-/*
-TODOs:
-1. Infer exact default value (once zod captures it in the types)
-2. DiscUnion options as tuple
-*/
-
 import { ValueOf } from "type-fest";
 
 type DistributeType<T> = T extends any ? { type: T } : never;
@@ -15,7 +9,6 @@ type PlainPrimitiveTypeNames =
   | "nan"
   | "bigInt"
   | "date"
-  | "symbol"
   | "undefined"
   | "null"
   | "any"
@@ -73,7 +66,6 @@ export type SzEnum<Values extends (string | number)[]> = {
   type: "enum";
   values: Values;
 };
-export type SzCatch<T> = { type: "catch"; value: T };
 export type SzPromise<T extends SzType> = { type: "promise"; value: T };
 
 // Modifiers
@@ -98,7 +90,6 @@ export type SzType = (
   | SzMap<any, any>
   | SzSet<any>
   | SzEnum<any>
-  | SzCatch<any>
   | SzPromise<any>
 ) &
   Partial<SzNullable & SzOptional & SzDefault<any>>;
