@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Infer } from "./infer";
+import { SzInfer } from "./infer";
 import { SzType } from "./types";
 
 type ShapeValueProps<Value> = {
@@ -10,14 +10,16 @@ type ShapeValueProps<Value> = {
 
 type ShapeProps<T extends SzType> = {
   shape: T;
-} & ShapeValueProps<Infer<T>>;
+} & ShapeValueProps<SzInfer<T>>;
 
 type MappedShapeControl<T extends SzType> = {
   [Type in T["type"]]: React.FC<ShapeProps<Extract<T, { type: Type }>>>;
 };
 
-export function mapViews<T extends SzType>(controls: MappedShapeControl<T>) {
-  return function ShapeControl<I = Infer<T>>({
+export function mapTypesToViews<T extends SzType>(
+  controls: MappedShapeControl<T>
+) {
+  return function ShapeControl<I = SzInfer<T>>({
     shape,
     value,
     onChange,
