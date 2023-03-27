@@ -1,0 +1,49 @@
+{
+  "name": "szod",
+  "version": "0.1.0",
+  "description": "Type-safe serialization for Zod",
+  "scripts": {
+    "check:style": "prettier --check src",
+    "check:lint": "eslint src/**",
+    "check:types": "tsc --noEmit",
+    "test": "vitest",
+    "build": "node build.js",
+    "prepare": "husky install"
+  },
+  "keywords": [
+    "zod",
+    "serialization"
+  ],
+  "author": "Gregor Weber<mail@dflate.io>",
+  "license": "MIT",
+  "peerDependencies": {
+    "@types/react": "^18.0.29",
+    "react": "^18.2.0",
+    "zod": "^3.20.0"
+  },
+  "dependencies": {
+    "type-fest": "^3.7.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.29",
+    "@typescript-eslint/eslint-plugin": "^5.56.0",
+    "@typescript-eslint/parser": "^5.56.0",
+    "esbuild": "^0.17.14",
+    "eslint": "^8.36.0",
+    "eslint-config-prettier": "^8.8.0",
+    "npm-dts": "^1.3.12",
+    "prettier": "^2.8.7",
+    "typescript": "^5.0.2",
+    "vitest": "0.29.7"
+  },
+  "files": [
+    "dist/*"
+  ],
+  "module": "dist/index.esm.js",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "lint-staged": {
+    "*.js": "eslint --cache --fix",
+    "*.{js,css,md}": "prettier --write"
+  }
+}
