@@ -1,6 +1,6 @@
 # Zodex
 
-Type-safe (de)?serialization library for [zod](https://zod.dev/). It both serializes and simplifies types, in the following ways:
+(De)?serialization library for [zod](https://zod.dev/). It both serializes and simplifies the shape of the schema, in the following ways:
 
 - optional, nullable and default types are inlined into any given types itself
 
@@ -8,7 +8,7 @@ Type-safe (de)?serialization library for [zod](https://zod.dev/). It both serial
 { "type": "string", "defaultValue": "hi" }
 ```
 
-- number checks are also inlined into the type itself
+- checks are also inlined into the type itself, e.g.
 
 ```json
 { "type": "number", "min": 23, "max": 42 }
@@ -37,9 +37,12 @@ const someZodType = z.discriminatedUnion("id", [
 const shape = zerialize(someZodType);
 ```
 
-Now `typeof shape` will be
+If you want to have the refined type for `shape` you can import the `Zerialize` type (this will be the default return of `zerialize` in a feature version, once the types are exhaustive):
 
 ```ts
+import { Zerialize } from "zodex";
+
+type Shape = Zerialize<typeof someZodType>;
 type Shape = {
   type: "discriminatedUnion";
   discriminator: "id";
@@ -79,13 +82,13 @@ options:
 
 ## Roadmap
 
-- deserialization (WIP lives on branch [dezerial](https://github.com/commonbaseapp/zodex/tree/dezerial), could use some help from TypeScript heroes)
 - missing checks
   - **number:** gte, lte, positive, nonnegative, negative, nonpositive
   - **bigInt:** same as number
   - **date**: min, max
   - **set**: size
-- custom error messages are not included
+- return refined types for `zerialize` and `dezerialize`
+- missing custom error messages
 
 ## Caveats
 

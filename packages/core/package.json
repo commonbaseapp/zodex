@@ -1,0 +1,32 @@
+{
+  "name": "zodex",
+  "version": "0.0.0-dev",
+  "description": "Type-safe (de)serialization for Zod",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "keywords": [
+    "zod",
+    "serialization",
+    "deserialization",
+    "reflection"
+  ],
+  "author": "Gregor Weber<oss@dflate.io>",
+  "license": "MIT",
+  "scripts": {
+    "build": "rm -rf dist && tsc",
+    "prepublish": "pnpm run build"
+  },
+  "peerDependencies": {
+    "@types/react": "^18.x",
+    "react": "^18.x",
+    "zod": "^3.x"
+  },
+  "dependencies": {
+    "react": "18.2.0",
+    "type-fest": "3.9.0",
+    "zod": "3.21.4"
+  },
+  "files": [
+    "dist/*"
+  ]
+}

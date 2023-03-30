@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node
-      - run: pnpm build
+      - run: pnpm run --parallel build
 
   release:
     needs: [check-style, lint, test, build]
