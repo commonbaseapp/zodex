@@ -13,32 +13,33 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node
-      - run: npm run check-style
+      - run: pnpm check-style
 
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node
-      - run: npm run lint
+      - run: pnpm lint
 
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node
-      - run: npm run test
+      - run: pnpm test
 
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node
-      - run: npm run build
+      - run: pnpm build
 
   release:
     needs: [check-style, lint, test, build]
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node
