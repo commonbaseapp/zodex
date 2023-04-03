@@ -1,15 +1,18 @@
 # Zodex
 
-Type-safe (de)serialization library for [zod](https://zod.dev/). It both serializes and simplifies types, in the following ways:
+Type-safe (de)?serialization library for [zod](https://zod.dev/). It both serializes and simplifies types, in the following ways:
 
-- optional, nullable and default types are inlined into any given types itself (e.g. `{ type: "string", defaultValue: "hi" }`)
-  - in zod these are wrapping types, which makes it harder to work with them
-- number checks are also inlined into the type itself (e.g. `{ type: "number", min: 0, max: 10 }`)
+- optional, nullable and default types are inlined into any given types itself
 
-**Caveats:**
+```json
+{ "type": "string", "defaultValue": "hi" }
+```
 
-- lazy, effects and brand are omitted
-- pipeline and catch types are unwrapped
+- number checks are also inlined into the type itself
+
+```json
+{ "type": "number", "min": 23, "max": 42 }
+```
 
 ## Installation
 
@@ -53,42 +56,40 @@ type Shape = {
 };
 ```
 
-which is exactly equal to its runtime value:
+which is exactly equal to its runtime value (shown in YAML for brevity, [you probably shouldn't use YAML](https://ruudvanasseldonk.com/2023/01/11/the-yaml-document-from-hell)):
 
-```ts
-({
-  type: "discriminatedUnion",
-  discriminator: "id",
-  options: [
-    {
-      type: "object",
-      properties: {
-        id: {
-          type: "literal",
-          value: "a",
-        },
-        count: {
-          type: "number",
-          isOptional: true,
-        },
-      },
-    },
-    {
-      type: "object",
-      properties: {
-        id: {
-          type: "literal",
-          value: "b",
-        },
-      },
-    },
-  ],
-});
+```yaml
+type: "discriminatedUnion"
+discriminator: "id"
+options:
+  - type: "object"
+    properties:
+      id:
+        type: "literal"
+        value: "a"
+      count:
+        type: "number"
+        isOptional: true
+  - type: "object"
+    properties:
+      id:
+        type: "literal"
+        value: "b"
 ```
 
----
+## Roadmap
 
-Expected breaking changes in the future:
+- deserialization (WIP lives on branch [dezerial](https://github.com/commonbaseapp/zodex/tree/dezerial), could use some help from TypeScript heroes)
+- missing checks
+  - **number:** gte, lte, int, positive, nonnegative, negative, nonpositive, multipleOf, finite, safe
+  - **string:** min, max, email, url, emoji, uuid, cuid, cuid2, regex, includes, startsWith, endsWith, datetime, ip
+  - **bigInt:** same as number
+  - **date**: min, max
+  - **set**: size
+- custom error messages are not included
 
-1. Union options as tuples
-1. Remove `sz.getDefaultValue` and `sz.Infer` in favor of deserializing to `zod` and using `z.defaultValue` and `z.Infer`
+## Caveats
+
+- lazy, effects and brand are omitted
+- pipeline and catch types are unwrapped
+- native enums are turned into enums
