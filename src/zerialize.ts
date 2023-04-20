@@ -247,6 +247,11 @@ const zerializers = {
   ZodTuple: (def) => ({
     type: "tuple",
     items: def.items.map(zerialize),
+    ...(def.rest
+      ? {
+          rest: zerialize(def.rest),
+        }
+      : {}),
   }),
   ZodSet: (def) => ({
     type: "set",
