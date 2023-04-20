@@ -82,7 +82,6 @@ options:
 - deserialization (WIP lives on branch [dezerial](https://github.com/commonbaseapp/zodex/tree/dezerial), could use some help from TypeScript heroes)
 - missing checks
   - **number:** gte, lte, positive, nonnegative, negative, nonpositive
-  - **string:** min, max, email, url, emoji, uuid, cuid, ulid, cuid2, regex, includes, startsWith, endsWith, datetime, ip
   - **bigInt:** same as number
   - **date**: min, max
   - **set**: size

@@ -8,6 +8,48 @@ test.each([
   [s(z.string()) satisfies { type: "string" }, { type: "string" }],
   [s(z.number()) satisfies { type: "number" }, { type: "number" }],
 
+  [s(z.string().regex(/sth/)), { type: "string", regex: "sth" }],
+  [
+    s(z.string().min(3).max(7).regex(/sth/u)),
+    { type: "string", min: 3, max: 7, regex: "sth", flags: "u" },
+  ],
+
+  [
+    s(z.string().length(10).startsWith("a").endsWith("z").includes("rst")),
+    {
+      type: "string",
+      length: 10,
+      startsWith: "a",
+      endsWith: "z",
+      includes: "rst",
+    },
+  ],
+
+  [
+    s(z.string().includes("special word", { position: 5 })),
+    { type: "string", includes: "special word", position: 5 },
+  ],
+
+  [s(z.string().email()), { type: "string", kind: "email" }],
+  [s(z.string().url()), { type: "string", kind: "url" }],
+  [s(z.string().emoji()), { type: "string", kind: "emoji" }],
+  [s(z.string().uuid()), { type: "string", kind: "uuid" }],
+  [s(z.string().cuid()), { type: "string", kind: "cuid" }],
+  [s(z.string().cuid2()), { type: "string", kind: "cuid2" }],
+  [s(z.string().ulid()), { type: "string", kind: "ulid" }],
+  [s(z.string().ip()), { type: "string", kind: "ip" }],
+  [s(z.string().datetime()), { type: "string", kind: "datetime" }],
+
+  [
+    s(z.string().ip({ version: "v4" })),
+    { type: "string", kind: "ip", version: "v4" },
+  ],
+
+  [
+    s(z.string().datetime({ offset: true, precision: 3 })),
+    { type: "string", kind: "datetime", offset: true, precision: 3 },
+  ],
+
   [
     s(z.string().optional()) satisfies {
       type: "string";
