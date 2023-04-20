@@ -141,6 +141,12 @@ const zerializers = {
           ? { min: check.value }
           : check.kind == "max"
           ? { max: check.value }
+          : check.kind == "multipleOf"
+          ? { multipleOf: check.value }
+          : check.kind == "int"
+          ? { int: true }
+          : check.kind == "finite"
+          ? { finite: true }
           : {}),
       }),
       {}
@@ -150,7 +156,22 @@ const zerializers = {
   ZodString: () => ({ type: "string" }),
   ZodBoolean: () => ({ type: "boolean" }),
   ZodNaN: () => ({ type: "nan" }),
-  ZodBigInt: () => ({ type: "bigInt" }),
+  ZodBigInt: (def) => {
+    const checks = def.checks.reduce(
+      (o, check) => ({
+        ...o,
+        ...(check.kind == "min"
+          ? { min: check.value }
+          : check.kind == "max"
+          ? { max: check.value }
+          : check.kind == "multipleOf"
+          ? { multipleOf: check.value }
+          : {}),
+      }),
+      {}
+    );
+    return { type: "bigInt", ...checks };
+  },
   ZodDate: () => ({ type: "date" }),
   ZodUndefined: () => ({ type: "undefined" }),
   ZodNull: () => ({ type: "null" }),
