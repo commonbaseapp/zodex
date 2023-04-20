@@ -208,6 +208,22 @@ test.each([
   ],
 
   [
+    s(z.set(z.string()).min(5).max(10)) satisfies {
+      type: "set";
+      value: { type: "string" };
+    },
+    { type: "set", value: { type: "string" }, minSize: 5, maxSize: 10 },
+  ],
+
+  [
+    s(z.set(z.string()).size(5)) satisfies {
+      type: "set";
+      value: { type: "string" };
+    },
+    { type: "set", value: { type: "string" }, minSize: 5, maxSize: 5 },
+  ],
+
+  [
     s(z.function(z.tuple([z.string()]), z.number())) satisfies {
       type: "function";
       args: { type: "tuple"; items: [{ type: "string" }] };

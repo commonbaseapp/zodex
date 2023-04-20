@@ -83,7 +83,6 @@ options:
 - missing checks
   - **number:** gte, lte, positive, nonnegative, negative, nonpositive
   - **bigInt:** same as number
-  - **set**: size
 - custom error messages are not included
 
 ## Caveats
