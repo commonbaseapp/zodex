@@ -126,6 +126,11 @@ test.each([
   ],
 
   [
+    s(z.date().min(new Date("1999-01-01")).max(new Date("2001-12-31"))),
+    { type: "date", min: 915148800000, max: 1009756800000 },
+  ],
+
+  [
     s(z.object({ foo: z.string() })) satisfies {
       type: "object";
       properties: { foo: { type: "string" } };

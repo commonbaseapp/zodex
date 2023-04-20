@@ -44,10 +44,14 @@ export type SzString = {
       }
   );
 
+export type SzDate = {
+  type: "date";
+  min?: number;
+  max?: number;
+};
 type PlainPrimitiveTypeNames =
   | "boolean"
   | "nan"
-  | "date"
   | "undefined"
   | "null"
   | "any"
@@ -58,7 +62,8 @@ export type SzPrimitive =
   | DistributeType<PlainPrimitiveTypeNames>
   | SzNumber
   | SzBigInt
-  | SzString;
+  | SzString
+  | SzDate;
 export type SzLiteral<T> = { type: "literal"; value: T };
 export type SzArray<T extends SzType> = { type: "array"; element: T };
 export type SzObject<T extends Record<string, SzType>> = {

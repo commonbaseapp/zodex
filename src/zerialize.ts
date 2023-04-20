@@ -221,7 +221,20 @@ const zerializers = {
     );
     return { type: "bigInt", ...checks };
   },
-  ZodDate: () => ({ type: "date" }),
+  ZodDate: (def) => {
+    const checks = def.checks.reduce(
+      (o, check) => ({
+        ...o,
+        ...(check.kind == "min"
+          ? { min: check.value }
+          : check.kind == "max"
+          ? { max: check.value }
+          : {}),
+      }),
+      {}
+    );
+    return { type: "date", ...checks };
+  },
   ZodUndefined: () => ({ type: "undefined" }),
   ZodNull: () => ({ type: "null" }),
   ZodAny: () => ({ type: "any" }),
