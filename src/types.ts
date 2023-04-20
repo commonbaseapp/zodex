@@ -65,7 +65,12 @@ export type SzPrimitive =
   | SzString
   | SzDate;
 export type SzLiteral<T> = { type: "literal"; value: T };
-export type SzArray<T extends SzType> = { type: "array"; element: T };
+export type SzArray<T extends SzType> = {
+  type: "array";
+  element: T;
+  minLength?: number;
+  maxLength?: number;
+};
 export type SzObject<T extends Record<string, SzType>> = {
   type: "object";
   properties: T;

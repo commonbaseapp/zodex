@@ -152,6 +152,21 @@ test.each([
   ],
 
   [
+    s(z.array(z.number()).min(3).max(10)),
+    { type: "array", element: { type: "number" }, minLength: 3, maxLength: 10 },
+  ],
+
+  [
+    s(z.array(z.number()).length(10)),
+    {
+      type: "array",
+      element: { type: "number" },
+      minLength: 10,
+      maxLength: 10,
+    },
+  ],
+
+  [
     s(z.union([z.string(), z.number()])) satisfies {
       type: "union";
       options: { type: "string" } | { type: "number" }[];
