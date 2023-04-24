@@ -39,11 +39,47 @@ test.each([
   ],
 
   [
-    s(z.number().min(23).max(42)),
+    s(z.number().min(23).max(42).multipleOf(5)),
     {
       type: "number",
       min: 23,
       max: 42,
+      multipleOf: 5,
+    },
+  ],
+
+  [
+    s(z.number().safe()),
+    {
+      type: "number",
+      min: -9007199254740991,
+      max: 9007199254740991,
+    },
+  ],
+
+  [
+    s(z.number().int()),
+    {
+      type: "number",
+      int: true,
+    },
+  ],
+
+  [
+    s(z.number().finite()),
+    {
+      type: "number",
+      finite: true,
+    },
+  ],
+
+  [
+    s(z.bigint().min(23n).max(42n).multipleOf(5n)),
+    {
+      type: "bigInt",
+      min: 23n,
+      max: 42n,
+      multipleOf: 5n,
     },
   ],
 
