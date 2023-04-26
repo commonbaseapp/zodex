@@ -51,7 +51,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           update-file: package.json
           allow-initial-development-versions: true
-      - run: npm publish --no-git-checks
+      - run: pnpm publish --no-git-checks
         if: steps.semrel.outputs.version != ''
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
