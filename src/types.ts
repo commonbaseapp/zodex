@@ -2,12 +2,24 @@ import { ValueOf } from "type-fest";
 
 type DistributeType<T> = T extends any ? { type: T } : never;
 
-export type SzNumber = { type: "number"; min?: number; max?: number };
+export type SzNumber = {
+  type: "number";
+  min?: number;
+  max?: number;
+  multipleOf?: number;
+  int?: true;
+  finite?: true;
+};
+export type SzBigInt = {
+  type: "bigInt";
+  min?: bigint;
+  max?: bigint;
+  multipleOf?: bigint;
+};
 type PlainPrimitiveTypeNames =
   | "string"
   | "boolean"
   | "nan"
-  | "bigInt"
   | "date"
   | "undefined"
   | "null"
@@ -15,7 +27,10 @@ type PlainPrimitiveTypeNames =
   | "unknown"
   | "never"
   | "void";
-export type SzPrimitive = DistributeType<PlainPrimitiveTypeNames> | SzNumber;
+export type SzPrimitive =
+  | DistributeType<PlainPrimitiveTypeNames>
+  | SzNumber
+  | SzBigInt;
 export type SzLiteral<T> = { type: "literal"; value: T };
 export type SzArray<T extends SzType> = { type: "array"; element: T };
 export type SzObject<T extends Record<string, SzType>> = {
