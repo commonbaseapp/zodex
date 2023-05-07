@@ -16,8 +16,35 @@ export type SzBigInt = {
   max?: bigint;
   multipleOf?: bigint;
 };
+export type SzString = {
+  type: "string";
+  min?: number;
+  max?: number;
+  length?: number;
+  startsWith?: string;
+  endsWith?: string;
+} & (
+  | object
+  | {
+      includes: string;
+      position?: number;
+    }
+) &
+  (
+    | object
+    | { kind: "ip"; version?: "v4" | "v6" }
+    | { regex: string; flags?: string }
+    | {
+        kind: "datetime";
+        offset?: true;
+        precision?: number;
+      }
+    | {
+        kind: "email" | "url" | "emoji" | "uuid" | "cuid" | "cuid" | "ulid";
+      }
+  );
+
 type PlainPrimitiveTypeNames =
-  | "string"
   | "boolean"
   | "nan"
   | "date"
@@ -30,7 +57,8 @@ type PlainPrimitiveTypeNames =
 export type SzPrimitive =
   | DistributeType<PlainPrimitiveTypeNames>
   | SzNumber
-  | SzBigInt;
+  | SzBigInt
+  | SzString;
 export type SzLiteral<T> = { type: "literal"; value: T };
 export type SzArray<T extends SzType> = { type: "array"; element: T };
 export type SzObject<T extends Record<string, SzType>> = {

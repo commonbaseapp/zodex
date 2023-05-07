@@ -125,6 +125,17 @@ type ZerializersMap = {
     def: ZodTypeMap[Key]["_def"]
   ) => Zerialize<ZodTypeMap[Key]>;
 };
+
+const STRING_KINDS = new Set([
+  "email",
+  "url",
+  "emoji",
+  "uuid",
+  "cuid",
+  "cuid2",
+  "ulid",
+]);
+
 const zerializers = {
   ZodOptional: (def) => ({ ...zerialize(def.innerType), isOptional: true }),
   ZodNullable: (def) => ({ ...zerialize(def.innerType), isNullable: true }),
@@ -153,7 +164,45 @@ const zerializers = {
     );
     return { type: "number", ...checks };
   },
-  ZodString: () => ({ type: "string" }),
+  ZodString: (def) => {
+    const checks = def.checks.reduce(
+      (o, check) => ({
+        ...o,
+        ...(check.kind == "min"
+          ? { min: check.value }
+          : check.kind == "max"
+          ? { max: check.value }
+          : check.kind == "length"
+          ? { length: check.value }
+          : check.kind == "startsWith"
+          ? { startsWith: check.value }
+          : check.kind == "endsWith"
+          ? { endsWith: check.value }
+          : check.kind == "includes"
+          ? { includes: check.value, position: check.position }
+          : check.kind == "regex"
+          ? {
+              regex: check.regex.source,
+              ...(check.regex.flags ? { flags: check.regex.flags } : {}),
+            }
+          : check.kind == "ip"
+          ? { kind: "ip", version: check.version }
+          : check.kind == "datetime"
+          ? {
+              kind: "datetime",
+              ...(check.offset ? { offset: check.offset } : {}),
+              ...(typeof check.precision === "number"
+                ? { precision: check.precision }
+                : {}),
+            }
+          : STRING_KINDS.has(check.kind)
+          ? { kind: check.kind }
+          : {}),
+      }),
+      {}
+    );
+    return { type: "string", ...checks };
+  },
   ZodBoolean: () => ({ type: "boolean" }),
   ZodNaN: () => ({ type: "nan" }),
   ZodBigInt: (def) => {
