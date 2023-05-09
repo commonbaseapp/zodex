@@ -1,12 +1,13 @@
 import React from "react";
-
-import { SzInfer } from "./infer";
-import { SzType } from "./types";
+import { Dezerialize, SzType } from "zodex";
+import { z } from "zod";
 
 type ShapeValueProps<Value> = {
   value: Value;
   onChange: (_value: Value) => void;
 };
+
+type SzInfer<T extends SzType> = z.infer<Dezerialize<T>>;
 
 type ShapeProps<T extends SzType> = {
   shape: T;
@@ -16,7 +17,7 @@ type MappedShapeControl<T extends SzType> = {
   [Type in T["type"]]: React.FC<ShapeProps<Extract<T, { type: Type }>>>;
 };
 
-export function mapTypesToViews<T extends SzType>(
+export function mapTypesToComponents<T extends SzType>(
   controls: MappedShapeControl<T>
 ) {
   return function ShapeControl<I = SzInfer<T>>({

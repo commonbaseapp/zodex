@@ -1,0 +1,25 @@
+{
+  "name": "@zodex/react",
+  "version": "0.0.0-dev",
+  "description": "Type-safe (de)serialization for Zod",
+  "keywords": [
+    "zod",
+    "serialization",
+    "deserialization",
+    "reflection"
+  ],
+  "author": "Gregor Weber<oss@dflate.io>",
+  "license": "MIT",
+  "peerDependencies": {
+    "@types/react": "^18.x",
+    "react": "^18.x",
+    "zod": "3.x"
+  },
+  "dependencies": {
+    "zodex": "workspace:zodex@*"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc",
+    "prepublish": "pnpm run build"
+  }
+}
