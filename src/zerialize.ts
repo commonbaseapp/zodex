@@ -251,6 +251,8 @@ const zerializers = {
   ZodSet: (def) => ({
     type: "set",
     value: zerialize(def.valueType),
+    ...(def.minSize === null ? {} : { minSize: def.minSize.value }),
+    ...(def.maxSize === null ? {} : { maxSize: def.maxSize.value }),
   }),
   ZodArray: (def) => ({ type: "array", element: zerialize(def.type) }),
 

@@ -104,6 +104,8 @@ export type SzMap<Key extends SzKey, Value extends SzType> = {
 export type SzSet<T extends SzType> = {
   type: "set";
   value: T;
+  minSize?: number;
+  maxSize?: number;
 };
 export type SzFunction<Args extends SzType, Return extends SzType> = {
   type: "function";
