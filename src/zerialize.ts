@@ -254,7 +254,19 @@ const zerializers = {
     ...(def.minSize === null ? {} : { minSize: def.minSize.value }),
     ...(def.maxSize === null ? {} : { maxSize: def.maxSize.value }),
   }),
-  ZodArray: (def) => ({ type: "array", element: zerialize(def.type) }),
+  ZodArray: (def) => ({
+    type: "array",
+    element: zerialize(def.type),
+
+    ...(def.exactLength === null
+      ? {}
+      : {
+          minLength: def.exactLength.value,
+          maxLength: def.exactLength.value,
+        }),
+    ...(def.minLength === null ? {} : { minLength: def.minLength.value }),
+    ...(def.maxLength === null ? {} : { maxLength: def.maxLength.value }),
+  }),
 
   ZodObject: (def) => ({
     type: "object",
