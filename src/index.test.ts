@@ -196,6 +196,17 @@ test.each([
   ],
 
   [
+    s(z.tuple([z.string(), z.number()]).rest(z.bigint())),
+    {
+      type: "tuple",
+      items: [{ type: "string" }, { type: "number" }],
+      rest: {
+        type: "bigInt",
+      },
+    },
+  ],
+
+  [
     s(z.record(z.literal(42))) satisfies {
       type: "record";
       key: { type: "string" };

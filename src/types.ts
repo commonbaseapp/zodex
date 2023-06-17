@@ -95,6 +95,7 @@ export type SzIntersection<Left extends SzType, Right extends SzType> = {
 export type SzTuple<Items extends SzType[]> = {
   type: "tuple";
   items: Items;
+  rest?: SzType;
 };
 export type SzRecord<Key extends SzKey, Value extends SzType> = {
   type: "record";
