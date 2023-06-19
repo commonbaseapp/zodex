@@ -6,6 +6,8 @@ export type SzNumber = {
   type: "number";
   min?: number;
   max?: number;
+  minInclusive?: number;
+  maxInclusive?: number;
   multipleOf?: number;
   int?: true;
   finite?: true;
@@ -14,6 +16,8 @@ export type SzBigInt = {
   type: "bigInt";
   min?: bigint;
   max?: bigint;
+  minInclusive?: number;
+  maxInclusive?: number;
   multipleOf?: bigint;
 };
 export type SzString = {

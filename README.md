@@ -80,9 +80,6 @@ options:
 ## Roadmap
 
 - deserialization (WIP lives on branch [dezerial](https://github.com/commonbaseapp/zodex/tree/dezerial), could use some help from TypeScript heroes)
-- missing checks
-  - **number:** gte, lte, positive, nonnegative, negative, nonpositive
-  - **bigInt:** same as number
 - custom error messages are not included
 
 ## Caveats

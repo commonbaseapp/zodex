@@ -152,6 +152,61 @@ test.each([
       min: 23,
       max: 42,
       multipleOf: 5,
+      minInclusive: true,
+      maxInclusive: true,
+    },
+  ],
+
+  [
+    s(z.number().gt(14).lt(20)),
+    {
+      type: "number",
+      min: 14,
+      max: 20,
+    },
+  ],
+
+  [
+    s(z.number().gte(14).lte(20)),
+    {
+      type: "number",
+      min: 14,
+      minInclusive: true,
+      max: 20,
+      maxInclusive: true,
+    },
+  ],
+
+  [
+    s(z.number().positive()),
+    {
+      type: "number",
+      min: 0,
+    },
+  ],
+  [
+    s(z.number().negative()),
+    {
+      type: "number",
+      max: 0,
+    },
+  ],
+
+  [
+    s(z.number().nonnegative()),
+    {
+      type: "number",
+      min: 0,
+      minInclusive: true,
+    },
+  ],
+
+  [
+    s(z.number().nonpositive()),
+    {
+      type: "number",
+      max: 0,
+      maxInclusive: true,
     },
   ],
 
@@ -161,6 +216,8 @@ test.each([
       type: "number",
       min: -9007199254740991,
       max: 9007199254740991,
+      minInclusive: true,
+      maxInclusive: true,
     },
   ],
 
@@ -185,8 +242,63 @@ test.each([
     {
       type: "bigInt",
       min: 23n,
+      minInclusive: true,
       max: 42n,
+      maxInclusive: true,
       multipleOf: 5n,
+    },
+  ],
+
+  [
+    s(z.bigint().gt(14n).lt(20n)),
+    {
+      type: "bigInt",
+      min: 14n,
+      max: 20n,
+    },
+  ],
+
+  [
+    s(z.bigint().gte(14n).lte(20n)),
+    {
+      type: "bigInt",
+      min: 14n,
+      minInclusive: true,
+      max: 20n,
+      maxInclusive: true,
+    },
+  ],
+
+  [
+    s(z.bigint().positive()),
+    {
+      type: "bigInt",
+      min: 0n,
+    },
+  ],
+  [
+    s(z.bigint().negative()),
+    {
+      type: "bigInt",
+      max: 0n,
+    },
+  ],
+
+  [
+    s(z.bigint().nonnegative()),
+    {
+      type: "bigInt",
+      min: 0n,
+      minInclusive: true,
+    },
+  ],
+
+  [
+    s(z.bigint().nonpositive()),
+    {
+      type: "bigInt",
+      max: 0n,
+      maxInclusive: true,
     },
   ],
 

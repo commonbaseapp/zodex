@@ -149,9 +149,15 @@ const zerializers = {
       (o, check) => ({
         ...o,
         ...(check.kind == "min"
-          ? { min: check.value }
+          ? {
+              min: check.value,
+              ...(check.inclusive ? { minInclusive: true } : {}),
+            }
           : check.kind == "max"
-          ? { max: check.value }
+          ? {
+              max: check.value,
+              ...(check.inclusive ? { maxInclusive: true } : {}),
+            }
           : check.kind == "multipleOf"
           ? { multipleOf: check.value }
           : check.kind == "int"
@@ -216,9 +222,15 @@ const zerializers = {
       (o, check) => ({
         ...o,
         ...(check.kind == "min"
-          ? { min: check.value }
+          ? {
+              min: check.value,
+              ...(check.inclusive ? { minInclusive: true } : {}),
+            }
           : check.kind == "max"
-          ? { max: check.value }
+          ? {
+              max: check.value,
+              ...(check.inclusive ? { maxInclusive: true } : {}),
+            }
           : check.kind == "multipleOf"
           ? {
               multipleOf: check.value,
