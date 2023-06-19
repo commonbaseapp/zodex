@@ -1,10 +1,75 @@
 import { expect, test } from "vitest";
 import { z } from "zod";
 
-import { getDefaultValue, SzInfer, zerialize } from "./";
+import { getDefaultValue, SzInfer, zerialize, mapTypesToViews } from "./";
+
+import { PRIMITIVES } from "./zerialize";
+
+enum Fruits {
+  Apple,
+  Banana,
+}
 
 const s = zerialize;
 test.each([
+  [
+    PRIMITIVES,
+    {
+      ZodAny: "any",
+      ZodBigInt: "bigInt",
+      ZodBoolean: "boolean",
+      ZodDate: "date",
+      ZodNaN: "nan",
+      ZodNever: "never",
+      ZodNull: "null",
+      ZodNumber: "number",
+      ZodString: "string",
+      ZodUndefined: "undefined",
+      ZodUnknown: "unknown",
+      ZodVoid: "void",
+    },
+  ],
+
+  [typeof mapTypesToViews, "function"],
+
+  [getDefaultValue({ type: "null", isNullable: true }), null],
+  [getDefaultValue({ type: "literal", value: "abc" }), "abc"],
+  [getDefaultValue({ type: "array", element: { type: "string" } }), []],
+  [
+    getDefaultValue({
+      type: "object",
+      properties: {
+        name: { type: "literal", value: "Gregor" },
+      },
+    }),
+    {
+      name: "Gregor",
+    },
+  ],
+
+  [s(z.string().nullable()), { type: "string", isNullable: true }],
+  [s(z.boolean()), { type: "boolean" }],
+  [s(z.nan()), { type: "nan" }],
+  [s(z.null()), { type: "null" }],
+  [s(z.undefined()), { type: "undefined" }],
+  [s(z.any()), { type: "any" }],
+  [s(z.unknown()), { type: "unknown" }],
+  [s(z.never()), { type: "never" }],
+  [s(z.void()), { type: "void" }],
+  [s(z.nativeEnum(Fruits)), { type: "unknown" }],
+  [
+    s(z.object({ name: z.string() }).brand<"Cat">()),
+    {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+        },
+      },
+    },
+  ],
+  [s(z.number().catch(42)), { type: "number" }],
+
   [s(z.string()) satisfies { type: "string" }, { type: "string" }],
   [s(z.number()) satisfies { type: "number" }, { type: "number" }],
 

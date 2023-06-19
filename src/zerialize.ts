@@ -157,7 +157,10 @@ const zerializers = {
           : check.kind == "int"
           ? { int: true }
           : check.kind == "finite"
-          ? { finite: true }
+          ? {
+              finite: true,
+              /* c8 ignore next 2 -- Guard */
+            }
           : {}),
       }),
       {}
@@ -196,7 +199,10 @@ const zerializers = {
                 : {}),
             }
           : STRING_KINDS.has(check.kind)
-          ? { kind: check.kind }
+          ? {
+              kind: check.kind,
+              /* c8 ignore next 2 -- Guard */
+            }
           : {}),
       }),
       {}
@@ -214,7 +220,10 @@ const zerializers = {
           : check.kind == "max"
           ? { max: check.value }
           : check.kind == "multipleOf"
-          ? { multipleOf: check.value }
+          ? {
+              multipleOf: check.value,
+              /* c8 ignore next 2 -- Guard */
+            }
           : {}),
       }),
       {}
@@ -228,7 +237,10 @@ const zerializers = {
         ...(check.kind == "min"
           ? { min: check.value }
           : check.kind == "max"
-          ? { max: check.value }
+          ? {
+              max: check.value,
+              /* c8 ignore next 2 -- Guard */
+            }
           : {}),
       }),
       {}
