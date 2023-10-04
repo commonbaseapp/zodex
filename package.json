@@ -28,7 +28,7 @@
   "dependencies": {
     "react": "18.2.0",
     "type-fest": "3.12.0",
-    "zod": "3.22.2"
+    "zod": "3.22.3"
   },
   "devDependencies": {
     "@commitlint/cli": "17.6.5",
