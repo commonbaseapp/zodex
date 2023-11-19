@@ -16,9 +16,12 @@ import {
   SzFunction,
   SzEnum,
   SzPromise,
-  SzPrimitive,
   SzNumber,
+  SzPrimitive,
+  SzType,
+  STRING_KINDS,
 } from "./types";
+import { ZodTypes, ZTypeName } from "./zod-types";
 
 export const PRIMITIVES = {
   ZodString: "string",
@@ -40,20 +43,11 @@ export const PRIMITIVES = {
 >;
 export type PrimitiveMap = typeof PRIMITIVES;
 
-// Zod Type helpers
-type Schema = z.ZodFirstPartySchemaTypes;
-type TypeName<T extends Schema> = T["_def"]["typeName"];
-
-type IsZodPrimitive<T extends Schema> = TypeName<T> extends keyof PrimitiveMap
-  ? any
-  : never;
-
-type ZerializeArray<Items extends Schema[]> = {
-  [Index in keyof Items]: Zerialize<Items[Index]>;
-};
+type IsZodPrimitive<T extends ZodTypes> =
+  ZTypeName<T> extends keyof PrimitiveMap ? any : never;
 
 // Types must match the exported zerialize function's implementation
-export type Zerialize<T extends Schema> =
+export type Zerialize<T extends ZodTypes> =
   // Modifier types
   T extends z.ZodOptional<infer I>
     ? Zerialize<I> & SzOptional
@@ -65,15 +59,17 @@ export type Zerialize<T extends Schema> =
     T extends z.ZodNumber
     ? SzNumber
     : T extends IsZodPrimitive<T>
-    ? {
-        type: (typeof PRIMITIVES)[TypeName<T>];
-      }
+    ? { type: PrimitiveMap[ZTypeName<T>] }
     : //
-    T extends z.ZodLiteral<infer Value>
-    ? SzLiteral<Value>
+    T extends z.ZodLiteral<infer T>
+    ? SzLiteral<T>
     : // List Collections
     T extends z.ZodTuple<infer Items>
-    ? SzTuple<ZerializeArray<[...Items]>>
+    ? {
+        [Index in keyof Items]: Zerialize<Items[Index]>;
+      } extends infer SzItems extends [SzType, ...SzType[]] | []
+      ? SzTuple<SzItems>
+      : SzType
     : T extends z.ZodSet<infer T>
     ? SzSet<Zerialize<T>>
     : T extends z.ZodArray<infer T>
@@ -94,17 +90,28 @@ export type Zerialize<T extends Schema> =
     ? { type: "unknown" }
     : // Union/Intersection
     T extends z.ZodUnion<infer Options>
-    ? SzUnion<ZerializeArray<[...Options]>>
+    ? {
+        [Index in keyof Options]: Zerialize<Options[Index]>;
+      } extends infer SzOptions extends [SzType, ...SzType[]]
+      ? SzUnion<SzOptions>
+      : SzType
     : T extends z.ZodDiscriminatedUnion<infer Discriminator, infer Options>
-    ? SzDiscriminatedUnion<Discriminator, ZerializeArray<Options>>
+    ? SzDiscriminatedUnion<
+        Discriminator,
+        {
+          [Index in keyof Options]: Zerialize<Options[Index]>;
+        }
+      >
     : T extends z.ZodIntersection<infer L, infer R>
     ? SzIntersection<Zerialize<L>, Zerialize<R>>
     : // Specials
     T extends z.ZodFunction<infer Args, infer Return>
-    ? SzFunction<Zerialize<Args>, Zerialize<Return>>
+    ? Zerialize<Args> extends infer SzArgs extends SzTuple
+      ? SzFunction<SzArgs, Zerialize<Return>>
+      : SzType
     : T extends z.ZodPromise<infer Value>
     ? SzPromise<Zerialize<Value>>
-    : // Unserializable types, fallback to serializing an inner type
+    : // Unserializable types, fallback to serializing inner type
     T extends z.ZodLazy<infer T>
     ? Zerialize<T>
     : T extends z.ZodEffects<infer T>
@@ -115,32 +122,21 @@ export type Zerialize<T extends Schema> =
     ? Zerialize<Out>
     : T extends z.ZodCatch<infer Inner>
     ? Zerialize<Inner>
-    : unknown;
+    : SzType;
 
 type ZodTypeMap = {
-  [Key in TypeName<Schema>]: Extract<Schema, { _def: { typeName: Key } }>;
+  [Key in ZTypeName<ZodTypes>]: Extract<ZodTypes, { _def: { typeName: Key } }>;
 };
 type ZerializersMap = {
-  [Key in TypeName<Schema>]: (
-    def: ZodTypeMap[Key]["_def"]
-  ) => Zerialize<ZodTypeMap[Key]>;
+  [Key in ZTypeName<ZodTypes>]: (def: ZodTypeMap[Key]["_def"]) => any; //Zerialize<ZodTypeMap[Key]>;
 };
 
-const STRING_KINDS = new Set([
-  "email",
-  "url",
-  "emoji",
-  "uuid",
-  "cuid",
-  "cuid2",
-  "ulid",
-]);
-
+const s = zerialize as any;
 const zerializers = {
-  ZodOptional: (def) => ({ ...zerialize(def.innerType), isOptional: true }),
-  ZodNullable: (def) => ({ ...zerialize(def.innerType), isNullable: true }),
+  ZodOptional: (def) => ({ ...s(def.innerType), isOptional: true }),
+  ZodNullable: (def) => ({ ...s(def.innerType), isNullable: true }),
   ZodDefault: (def) => ({
-    ...zerialize(def.innerType),
+    ...s(def.innerType),
     defaultValue: def.defaultValue(),
   }),
 
@@ -204,7 +200,7 @@ const zerializers = {
                 ? { precision: check.precision }
                 : {}),
             }
-          : STRING_KINDS.has(check.kind)
+          : STRING_KINDS.has(check.kind as any)
           ? {
               kind: check.kind,
               /* c8 ignore next 2 -- Guard */
@@ -279,13 +275,13 @@ const zerializers = {
   }),
   ZodSet: (def) => ({
     type: "set",
-    value: zerialize(def.valueType),
+    value: s(def.valueType),
     ...(def.minSize === null ? {} : { minSize: def.minSize.value }),
     ...(def.maxSize === null ? {} : { maxSize: def.maxSize.value }),
   }),
   ZodArray: (def) => ({
     type: "array",
-    element: zerialize(def.type),
+    element: s(def.type),
 
     ...(def.exactLength === null
       ? {}
@@ -302,19 +298,19 @@ const zerializers = {
     properties: Object.fromEntries(
       Object.entries(def.shape()).map(([key, value]) => [
         key,
-        zerialize(value as Schema),
+        s(value as ZodTypes),
       ])
     ),
   }),
   ZodRecord: (def) => ({
     type: "record",
     key: zerialize(def.keyType),
-    value: zerialize(def.valueType),
+    value: s(def.valueType),
   }),
   ZodMap: (def) => ({
     type: "map",
-    key: zerialize(def.keyType),
-    value: zerialize(def.valueType),
+    key: s(def.keyType),
+    value: s(def.valueType),
   }),
 
   ZodEnum: (def) => ({ type: "enum", values: def.values }),
@@ -323,7 +319,7 @@ const zerializers = {
 
   ZodUnion: (def) => ({
     type: "union",
-    options: def.options.map(zerialize),
+    options: def.options.map(s),
   }),
   ZodDiscriminatedUnion: (def) => ({
     type: "discriminatedUnion",
@@ -332,7 +328,7 @@ const zerializers = {
   }),
   ZodIntersection: (def) => ({
     type: "intersection",
-    left: zerialize(def.left),
+    left: s(def.left),
     right: zerialize(def.right),
   }),
 
@@ -351,8 +347,8 @@ const zerializers = {
 } satisfies ZerializersMap as ZerializersMap;
 
 // Must match the exported Zerialize types
-export function zerialize<T extends Schema>(_schema: T): Zerialize<T>;
-export function zerialize(schema: Schema): unknown {
+// export function zerialize<T extends ZodTypes>(_schema: T): Zerialize<T> {
+export function zerialize(schema: ZodTypes): unknown {
   const { _def: def } = schema;
   return zerializers[def.typeName](def as any);
 }
