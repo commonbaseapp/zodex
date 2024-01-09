@@ -1,6 +1,6 @@
 # Zodex
 
-Type-safe (de)?serialization library for [zod](https://zod.dev/). It both serializes and simplifies types, in the following ways:
+Type-safe (de)serialization library for [zod](https://zod.dev/). It both serializes and simplifies types, in the following ways:
 
 - optional, nullable and default types are inlined into any given types itself
 
@@ -79,7 +79,6 @@ options:
 
 ## Roadmap
 
-- deserialization (WIP lives on branch [dezerial](https://github.com/commonbaseapp/zodex/tree/dezerial), could use some help from TypeScript heroes)
 - custom error messages are not included
 
 ## Caveats
@@ -87,3 +86,4 @@ options:
 - lazy, effects and brand are omitted
 - pipeline and catch types are unwrapped
 - native enums are turned into enums
+- recursive schemas not currently supported
