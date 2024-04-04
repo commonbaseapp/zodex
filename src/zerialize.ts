@@ -167,7 +167,7 @@ const zerializers = {
       }),
       {}
     );
-    return { type: "number", ...checks };
+    return { type: "number", ...checks, coerce: def.coerce };
   },
   ZodString: (def) => {
     const checks = def.checks.reduce(
@@ -209,9 +209,9 @@ const zerializers = {
       }),
       {}
     );
-    return { type: "string", ...checks };
+    return { type: "string", ...checks, coerce: def.coerce };
   },
-  ZodBoolean: () => ({ type: "boolean" }),
+  ZodBoolean: (def) => ({ type: "boolean", coerce: def.coerce }),
   ZodNaN: () => ({ type: "nan" }),
   ZodBigInt: (def) => {
     const checks = def.checks.reduce(
@@ -236,7 +236,7 @@ const zerializers = {
       }),
       {}
     );
-    return { type: "bigInt", ...checks };
+    return { type: "bigInt", ...checks, coerce: def.coerce };
   },
   ZodDate: (def) => {
     const checks = def.checks.reduce(
@@ -253,7 +253,7 @@ const zerializers = {
       }),
       {}
     );
-    return { type: "date", ...checks };
+    return { type: "date", ...checks, coerce: def.coerce };
   },
   ZodUndefined: () => ({ type: "undefined" }),
   ZodNull: () => ({ type: "null" }),
