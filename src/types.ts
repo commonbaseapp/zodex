@@ -2,6 +2,7 @@ import { ValueOf } from "type-fest";
 
 export type SzNumber = {
   type: "number";
+  coerce?: boolean;
   min?: number;
   max?: number;
   minInclusive?: boolean;
@@ -12,6 +13,7 @@ export type SzNumber = {
 };
 export type SzBigInt = {
   type: "bigInt";
+  coerce?: boolean;
   min?: bigint;
   max?: bigint;
   minInclusive?: boolean;
@@ -31,6 +33,7 @@ export const STRING_KINDS = new Set([
 
 export type SzString = {
   type: "string";
+  coerce?: boolean;
   min?: number;
   max?: number;
   length?: number;
@@ -59,11 +62,12 @@ export type SzString = {
 
 export type SzDate = {
   type: "date";
+  coerce?: boolean;
   min?: number;
   max?: number;
 };
 
-export type SzBoolean = { type: "boolean" };
+export type SzBoolean = { type: "boolean"; coerce?: boolean };
 export type SzNaN = { type: "nan" };
 export type SzUndefined = { type: "undefined" };
 export type SzNull = { type: "null" };

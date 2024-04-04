@@ -404,3 +404,14 @@ test("discriminated union", () => {
     reach: 42,
   });
 });
+
+test("coerce", () => {
+  const schema = z.coerce.number();
+  expect(schema.parse("42")).toEqual(42);
+  const shape = zerialize(schema);
+  expect(shape).toEqual({
+    type: "number",
+    coerce: true,
+  });
+  expect(dezerialize(shape as SzType).parse("42")).toEqual(42);
+});
