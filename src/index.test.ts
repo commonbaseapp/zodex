@@ -163,46 +163,46 @@ test.each([
 
   p(z.bigint().min(BigInt(23)).max(BigInt(42)).multipleOf(BigInt(5)), {
     type: "bigInt",
-    min: BigInt(23),
+    min: "23",
     minInclusive: true,
-    max: BigInt(42),
+    max: "42",
     maxInclusive: true,
-    multipleOf: BigInt(5),
+    multipleOf: "5",
   } as any),
 
   p(z.bigint().gt(14n).lt(20n), {
     type: "bigInt",
-    min: 14n,
-    max: 20n,
+    min: "14",
+    max: "20",
   }),
 
   p(z.bigint().gte(14n).lte(20n), {
     type: "bigInt",
-    min: 14n,
+    min: "14",
     minInclusive: true,
-    max: 20n,
+    max: "20",
     maxInclusive: true,
   }),
 
   p(z.bigint().positive(), {
     type: "bigInt",
-    min: 0n,
+    min: "0",
   }),
 
   p(z.bigint().negative(), {
     type: "bigInt",
-    max: 0n,
+    max: "0",
   }),
 
   p(z.bigint().nonnegative(), {
     type: "bigInt",
-    min: 0n,
+    min: "0",
     minInclusive: true,
   }),
 
   p(z.bigint().nonpositive(), {
     type: "bigInt",
-    max: 0n,
+    max: "0",
     maxInclusive: true,
   }),
 

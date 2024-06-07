@@ -1,6 +1,6 @@
 # Zodex
 
-Type-safe (de)serialization library for [zod](https://zod.dev/). It both serializes and simplifies types, in the following ways:
+Type-safe (de)serialization library for [zod](https://zod.dev/). It both serializes and simplifies types into a JSON format, in the following ways:
 
 - optional, nullable and default types are inlined into any given types itself
 
