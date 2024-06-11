@@ -117,7 +117,7 @@ type DezerializersMap = {
 };
 const dezerializers = {
   number: (shape) => {
-    let n = z.number();
+    let n = shape.coerce ? z.coerce.number() : z.number();
     if (shape.min !== undefined) {
       n = shape.minInclusive ? n.min(shape.min) : n.gt(shape.min);
     }
@@ -136,7 +136,7 @@ const dezerializers = {
     return n;
   },
   string: (shape) => {
-    let s = z.string();
+    let s = shape.coerce ? z.coerce.string() : z.string();
     if (shape.min !== undefined) {
       s = s.min(shape.min);
     }
@@ -170,10 +170,10 @@ const dezerializers = {
 
     return s;
   },
-  boolean: () => z.boolean(),
+  boolean: (shape) => shape.coerce ? z.coerce.boolean() : z.boolean(),
   nan: () => z.nan(),
   bigInt: (shape) => {
-    let i = z.bigint();
+    let i = shape.coerce ? z.coerce.bigint() : z.bigint();
     if (shape.min !== undefined) {
       i = shape.minInclusive ? i.min(shape.min) : i.gt(shape.min);
     }
@@ -186,7 +186,7 @@ const dezerializers = {
     return i;
   },
   date: (shape) => {
-    let i = z.date();
+    let i = shape.coerce ? z.coerce.date() : z.date();
     if (shape.min !== undefined) {
       i = i.min(new Date(shape.min));
     }
