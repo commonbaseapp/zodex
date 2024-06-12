@@ -14,11 +14,11 @@ export type SzNumber = {
 export type SzBigInt = {
   type: "bigInt";
   coerce?: boolean;
-  min?: bigint;
-  max?: bigint;
+  min?: string;
+  max?: string;
   minInclusive?: boolean;
   maxInclusive?: boolean;
-  multipleOf?: bigint;
+  multipleOf?: string;
 };
 
 export const STRING_KINDS = new Set([

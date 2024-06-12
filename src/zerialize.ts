@@ -226,17 +226,17 @@ const zerializers = {
         ...o,
         ...(check.kind == "min"
           ? {
-              min: check.value,
+              min: String(check.value),
               ...(check.inclusive ? { minInclusive: true } : {}),
             }
           : check.kind == "max"
           ? {
-              max: check.value,
+              max: String(check.value),
               ...(check.inclusive ? { maxInclusive: true } : {}),
             }
           : check.kind == "multipleOf"
           ? {
-              multipleOf: check.value,
+              multipleOf: String(check.value),
               /* c8 ignore next 2 -- Guard */
             }
           : {}),

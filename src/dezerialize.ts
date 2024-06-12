@@ -170,18 +170,21 @@ const dezerializers = {
 
     return s;
   },
-  boolean: (shape) => shape.coerce ? z.coerce.boolean() : z.boolean(),
+  boolean: (shape) => (shape.coerce ? z.coerce.boolean() : z.boolean()),
   nan: () => z.nan(),
   bigInt: (shape) => {
     let i = shape.coerce ? z.coerce.bigint() : z.bigint();
     if (shape.min !== undefined) {
-      i = shape.minInclusive ? i.min(shape.min) : i.gt(shape.min);
+      const min = BigInt(shape.min);
+      i = shape.minInclusive ? i.min(min) : i.gt(min);
     }
     if (shape.max !== undefined) {
-      i = shape.maxInclusive ? i.max(shape.max) : i.lt(shape.max);
+      const max = BigInt(shape.max);
+      i = shape.maxInclusive ? i.max(max) : i.lt(max);
     }
     if (shape.multipleOf !== undefined) {
-      i = i.multipleOf(shape.multipleOf);
+      const multipleOf = BigInt(shape.multipleOf);
+      i = i.multipleOf(multipleOf);
     }
     return i;
   },
