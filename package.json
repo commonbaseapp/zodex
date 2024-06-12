@@ -17,7 +17,7 @@
     "check-style": "prettier --check src",
     "lint": "eslint src/**",
     "test": "vitest --coverage",
-    "build": "rm -rf dist && tsc",
+    "build": "rm -rf dist && pnpm tsc",
     "prepublish": "pnpm run build"
   },
   "peerDependencies": {
