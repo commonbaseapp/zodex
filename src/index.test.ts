@@ -405,7 +405,7 @@ test("discriminated union", () => {
   });
 });
 
-test("coerce", () => {
+test("coerce (number)", () => {
   const schema = z.coerce.number();
   expect(schema.parse("42")).toEqual(42);
   const shape = zerialize(schema);
@@ -414,4 +414,50 @@ test("coerce", () => {
     coerce: true,
   });
   expect(dezerialize(shape as SzType).parse("42")).toEqual(42);
+});
+
+test("coerce (bigint)", () => {
+  const schema = z.coerce.bigint();
+  expect(schema.parse("42")).toEqual(42n);
+  const shape = zerialize(schema);
+  expect(shape).toEqual({
+    type: "bigInt",
+    coerce: true,
+  });
+  expect(dezerialize(shape as SzType).parse("42")).toEqual(42n);
+});
+
+test("coerce (date)", () => {
+  const schema = z.coerce.date();
+  expect(schema.parse("1999-01-01")).toEqual(new Date("1999-01-01"));
+  const shape = zerialize(schema);
+  expect(shape).toEqual({
+    type: "date",
+    coerce: true,
+  });
+  expect(dezerialize(shape as SzType).parse("1999-01-01")).toEqual(
+    new Date("1999-01-01")
+  );
+});
+
+test("coerce (string)", () => {
+  const schema = z.coerce.string();
+  expect(schema.parse(42)).toEqual("42");
+  const shape = zerialize(schema);
+  expect(shape).toEqual({
+    type: "string",
+    coerce: true,
+  });
+  expect(dezerialize(shape as SzType).parse(42)).toEqual("42");
+});
+
+test("coerce (boolean)", () => {
+  const schema = z.coerce.boolean();
+  expect(schema.parse(0)).toEqual(false);
+  const shape = zerialize(schema);
+  expect(shape).toEqual({
+    type: "boolean",
+    coerce: true,
+  });
+  expect(dezerialize(shape as SzType).parse(0)).toEqual(false);
 });
