@@ -279,10 +279,10 @@ const zerializers = {
 
   ZodTuple: (def) => ({
     type: "tuple",
-    items: def.items.map(zerialize),
+    items: def.items.map((item: ZodTypes) => s(item)),
     ...(def.rest
       ? {
-          rest: zerialize(def.rest),
+          rest: s(def.rest),
         }
       : {}),
   }),
@@ -317,7 +317,7 @@ const zerializers = {
   }),
   ZodRecord: (def) => ({
     type: "record",
-    key: zerialize(def.keyType),
+    key: s(def.keyType),
     value: s(def.valueType),
   }),
   ZodMap: (def) => ({
@@ -332,31 +332,31 @@ const zerializers = {
 
   ZodUnion: (def) => ({
     type: "union",
-    options: def.options.map(s),
+    options: def.options.map((opt) => s(opt)),
   }),
   ZodDiscriminatedUnion: (def) => ({
     type: "discriminatedUnion",
     discriminator: def.discriminator,
-    options: def.options.map(zerialize),
+    options: def.options.map((opt) => s(opt)),
   }),
   ZodIntersection: (def) => ({
     type: "intersection",
     left: s(def.left),
-    right: zerialize(def.right),
+    right: s(def.right),
   }),
 
   ZodFunction: (def) => ({
     type: "function",
-    args: zerialize(def.args),
-    returns: zerialize(def.returns),
+    args: s(def.args),
+    returns: s(def.returns),
   }),
-  ZodPromise: (def) => ({ type: "promise", value: zerialize(def.type) }),
+  ZodPromise: (def) => ({ type: "promise", value: s(def.type) }),
 
-  ZodLazy: (def) => zerialize(def.getter()),
-  ZodEffects: (def) => zerialize(def.schema),
-  ZodBranded: (def) => zerialize(def.type),
-  ZodPipeline: (def) => zerialize(def.out),
-  ZodCatch: (def) => zerialize(def.innerType),
+  ZodLazy: (def) => s(def.getter()),
+  ZodEffects: (def) => s(def.schema),
+  ZodBranded: (def) => s(def.type),
+  ZodPipeline: (def) => s(def.out),
+  ZodCatch: (def) => s(def.innerType),
 } satisfies ZerializersMap as ZerializersMap;
 
 // Must match the exported Zerialize types

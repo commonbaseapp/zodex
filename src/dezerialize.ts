@@ -208,7 +208,7 @@ const dezerializers = {
   literal: (shape) => z.literal(shape.value),
 
   tuple: ((shape: SzTuple) => {
-    let i = z.tuple(shape.items.map(dezerialize) as any);
+    let i = z.tuple(shape.items.map((item) => dezerialize(item)) as any);
     if (shape.rest) {
       i = i.rest(dezerialize(shape.rest) as any);
     }
@@ -252,11 +252,11 @@ const dezerializers = {
   enum: ((shape: SzEnum) => z.enum(shape.values)) as any,
 
   union: ((shape: SzUnion) =>
-    z.union(shape.options.map(dezerialize) as any)) as any,
+    z.union(shape.options.map((opt) => dezerialize(opt)) as any)) as any,
   discriminatedUnion: ((shape: SzDiscriminatedUnion) =>
     z.discriminatedUnion(
       shape.discriminator,
-      shape.options.map(dezerialize) as any
+      shape.options.map((opt) => dezerialize(opt)) as any
     )) as any,
   intersection: ((shape: SzIntersection) =>
     z.intersection(dezerialize(shape.left), dezerialize(shape.right))) as any,
