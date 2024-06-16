@@ -169,6 +169,15 @@ export type SzPromise<T extends SzType = SzType> = {
   value: T;
 };
 
+export type SzEffect<T extends SzType = SzType> = {
+  type: "effect";
+  effects: {
+    name: string;
+    type: "refinement" | "transform" | "preprocess";
+  }[];
+  inner: T;
+};
+
 // Modifiers
 export type SzNullable = { isNullable: boolean };
 export type SzOptional = { isOptional: boolean };
@@ -193,6 +202,7 @@ export type SzType = (
   | SzFunction<any, any>
   | SzEnum<any>
   | SzPromise<any>
+  | SzEffect<any>
 ) &
   Partial<SzNullable & SzOptional & SzDefault<any>>;
 

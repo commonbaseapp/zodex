@@ -17,6 +17,7 @@ import {
   SzEnum,
   SzPromise,
   SzNumber,
+  SzEffect,
   SzPrimitive,
   SzType,
   STRING_KINDS,
@@ -111,10 +112,10 @@ export type Zerialize<T extends ZodTypes> =
       : SzType
     : T extends z.ZodPromise<infer Value>
     ? SzPromise<Zerialize<Value>>
+    : T extends z.ZodEffects<infer T>
+    ? SzEffect<Zerialize<T>>
     : // Unserializable types, fallback to serializing inner type
     T extends z.ZodLazy<infer T>
-    ? Zerialize<T>
-    : T extends z.ZodEffects<infer T>
     ? Zerialize<T>
     : T extends z.ZodBranded<infer T, infer _Brand>
     ? Zerialize<T>
@@ -128,7 +129,13 @@ type ZodTypeMap = {
   [Key in ZTypeName<ZodTypes>]: Extract<ZodTypes, { _def: { typeName: Key } }>;
 };
 
-type ZerializerOptions = any;
+type ZerializerOptions =
+  | {
+      superRefinements?: { [key: string]: (value: any, ctx: any) => void };
+      transforms?: { [key: string]: (value: any, ctx: any) => void };
+      preprocesses?: { [key: string]: (value: any, ctx: any) => void };
+    }
+  | undefined;
 
 type ZerializersMap = {
   [Key in ZTypeName<ZodTypes>]: (
@@ -359,15 +366,87 @@ const zerializers = {
   ZodPromise: (def, opts) => ({ type: "promise", value: s(def.type, opts) }),
 
   ZodLazy: (def, opts) => s(def.getter(), opts),
-  ZodEffects: (def, opts) => s(def.schema, opts),
+  ZodEffects: (def, opts) => {
+    if (
+      !opts ||
+      !(
+        "superRefinements" in opts ||
+        "transforms" in opts ||
+        "preprocesses" in opts
+      )
+    ) {
+      return s(def.schema, opts);
+    }
+
+    const effects = [];
+
+    let lastDef;
+    let d = def;
+    do {
+      lastDef = d;
+
+      let found;
+      if ("superRefinements" in opts && opts.superRefinements) {
+        for (const [name, refinement] of Object.entries(
+          opts.superRefinements
+        )) {
+          if (
+            d.effect.type === "refinement" &&
+            refinement === d.effect.refinement
+          ) {
+            effects.unshift({ type: "refinement", name });
+            found = true;
+            break;
+          }
+        }
+      }
+
+      if (!found && "transforms" in opts && opts.transforms) {
+        for (const [name, transform] of Object.entries(opts.transforms)) {
+          if (
+            d.effect.type === "transform" &&
+            transform === d.effect.transform
+          ) {
+            effects.unshift({ type: "transform", name });
+            found = true;
+            break;
+          }
+        }
+      }
+
+      if (!found && "preprocesses" in opts && opts.preprocesses) {
+        for (const [name, preprocess] of Object.entries(opts.preprocesses)) {
+          if (
+            d.effect.type === "preprocess" &&
+            preprocess === d.effect.transform
+          ) {
+            effects.unshift({ type: "preprocess", name });
+            found = true;
+            break;
+          }
+        }
+      }
+
+      d = d.schema._def;
+    } while (d && d.typeName === "ZodEffects");
+
+    return {
+      type: "effect",
+      effects,
+      inner: s(lastDef.schema, opts),
+    };
+  },
   ZodBranded: (def, opts) => s(def.type, opts),
   ZodPipeline: (def, opts) => s(def.out, opts),
   ZodCatch: (def, opts) => s(def.innerType, opts),
 } satisfies ZerializersMap as ZerializersMap;
 
 // Must match the exported Zerialize types
-// export function zerialize<T extends ZodTypes>(_schema: T): Zerialize<T> {
-export function zerialize(schema: ZodTypes, opts?: ZerializerOptions): unknown {
+export function zerialize<T extends ZodTypes>(
+  schema: T,
+  opts?: ZerializerOptions
+): Zerialize<T> {
+  // export function zerialize(schema: ZodTypes, opts?: ZerializerOptions): unknown {
   const { _def: def } = schema;
   return zerializers[def.typeName](def as any, opts);
 }

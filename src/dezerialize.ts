@@ -16,6 +16,7 @@ import {
   SzFunction,
   SzEnum,
   SzPromise,
+  SzEffect,
   SzType,
   SzString,
   SzNumber,
@@ -32,7 +33,11 @@ import {
 } from "./types";
 import { ZodTypes } from "./zod-types";
 
-type DezerializerOptions = any;
+type DezerializerOptions = {
+  superRefinements?: { [key: string]: (value: any, ctx: any) => void };
+  transforms?: { [key: string]: (value: any, ctx: any) => void };
+  preprocesses?: { [key: string]: (value: any, ctx: any) => void };
+};
 
 type DistributiveOmit<T, K extends keyof any> = T extends any
   ? Omit<T, K>
@@ -112,10 +117,15 @@ export type Dezerialize<T extends SzType> =
     ? z.ZodFunction<Dezerialize<Args>, Dezerialize<Return>>
     : T extends SzPromise<infer Value>
     ? z.ZodPromise<Dezerialize<Value>>
+    : T extends SzEffect<infer Value>
+    ? z.ZodEffects<Dezerialize<Value>>
     : unknown;
 
 type DezerializersMap = {
-  [T in SzType["type"]]: (shape: Extract<SzType, { type: T }>) => ZodTypes; //Dezerialize<Extract<SzType, { type: T }>>;
+  [T in SzType["type"]]: (
+    shape: Extract<SzType, { type: T }>,
+    opts: DezerializerOptions
+  ) => ZodTypes; //Dezerialize<Extract<SzType, { type: T }>>;
 };
 const dezerializers = {
   number: (shape) => {
@@ -279,13 +289,47 @@ const dezerializers = {
     )) as any,
   promise: ((shape: SzPromise, opts: DezerializerOptions) =>
     z.promise(dezerialize(shape.value, opts))) as any,
+  effect: ((shape: SzEffect, opts: DezerializerOptions) => {
+    let base = dezerialize(shape.inner, opts);
+    if (
+      !(
+        "superRefinements" in opts ||
+        "transforms" in opts ||
+        "preprocesses" in opts
+      )
+    ) {
+      return base;
+    }
+    for (const { name, type } of shape.effects) {
+      if (
+        type === "refinement" &&
+        opts.superRefinements &&
+        opts.superRefinements[name]
+      ) {
+        base = base.superRefine(opts.superRefinements[name]);
+      } else if (
+        type === "transform" &&
+        opts.transforms &&
+        opts.transforms[name]
+      ) {
+        base = base.transform(opts.transforms[name]);
+      } else if (
+        type === "preprocess" &&
+        opts.preprocesses &&
+        opts.preprocesses[name]
+      ) {
+        base = z.preprocess(opts.preprocesses[name], base);
+      }
+    }
+    return base;
+  }) as any,
 } satisfies DezerializersMap as DezerializersMap;
 
 // Must match the exported Dezerialize types
 // export function dezerialize<T extends SzType>(_shape: T): Dezerialize<T>;
 export function dezerialize(
   shape: SzType,
-  opts?: DezerializerOptions
+  opts: DezerializerOptions = {}
 ): ZodTypes {
   if ("isOptional" in shape) {
     const { isOptional, ...rest } = shape;
@@ -305,5 +349,5 @@ export function dezerialize(
     return inner.default(defaultValue);
   }
 
-  return dezerializers[shape.type](shape as any);
+  return dezerializers[shape.type](shape as any, opts);
 }
