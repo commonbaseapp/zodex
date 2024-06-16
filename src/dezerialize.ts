@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod'
 import {
   SzOptional,
   SzNullable,
@@ -29,15 +29,20 @@ import {
   SzUndefined,
   SzUnknown,
   SzVoid,
-} from "./types";
-import { ZodTypes } from "./zod-types";
+  SzLazy,
+} from './types'
+import { ZodTypes } from './zod-types'
 
 type DistributiveOmit<T, K extends keyof any> = T extends any
   ? Omit<T, K>
-  : never;
-type OmitKey<T, K> = DistributiveOmit<T, keyof K>;
+  : never
+type OmitKey<T, K> = DistributiveOmit<T, keyof K>
 
-// Types must match the exported dezerialize function's implementation
+interface DezerializeContext {
+  seenSchemas: Map<SzType, ZodTypes>
+  pendingSchemas: Map<SzType, ZodTypes>
+}
+
 export type Dezerialize<T extends SzType> =
   // Modifier types
   T extends SzOptional
@@ -92,7 +97,7 @@ export type Dezerialize<T extends SzType> =
     ? z.ZodArray<Dezerialize<Element>> // Key/Value Collections
     : T extends SzObject<infer Properties>
     ? z.ZodObject<{
-        [Property in keyof Properties]: Dezerialize<Properties[Property]>;
+        [Property in keyof Properties]: Dezerialize<Properties[Property]>
       }>
     : T extends SzRecord<infer Key, infer Value>
     ? z.ZodRecord<Dezerialize<Key>, Dezerialize<Value>>
@@ -110,185 +115,223 @@ export type Dezerialize<T extends SzType> =
     ? z.ZodFunction<Dezerialize<Args>, Dezerialize<Return>>
     : T extends SzPromise<infer Value>
     ? z.ZodPromise<Dezerialize<Value>>
-    : unknown;
+    : T extends SzLazy
+    ? z.ZodLazy<() => Dezerialize<T['schema']>>
+    : unknown
 
 type DezerializersMap = {
-  [T in SzType["type"]]: (shape: Extract<SzType, { type: T }>) => ZodTypes; //Dezerialize<Extract<SzType, { type: T }>>;
-};
+  [T in SzType['type']]: (
+    shape: Extract<SzType, { type: T }>,
+    ctx: DezerializeContext
+  ) => ZodTypes //Dezerialize<Extract<SzType, { type: T }>>;
+}
 const dezerializers = {
-  number: (shape) => {
-    let n = shape.coerce ? z.coerce.number() : z.number();
+  number: (shape, ctx) => {
+    let n = shape.coerce ? z.coerce.number() : z.number()
     if (shape.min !== undefined) {
-      n = shape.minInclusive ? n.min(shape.min) : n.gt(shape.min);
+      n = shape.minInclusive ? n.min(shape.min) : n.gt(shape.min)
     }
     if (shape.max !== undefined) {
-      n = shape.maxInclusive ? n.max(shape.max) : n.lt(shape.max);
+      n = shape.maxInclusive ? n.max(shape.max) : n.lt(shape.max)
     }
     if (shape.multipleOf !== undefined) {
-      n = n.multipleOf(shape.multipleOf);
+      n = n.multipleOf(shape.multipleOf)
     }
     if (shape.int) {
-      n = n.int();
+      n = n.int()
     }
     if (shape.finite) {
-      n = n.finite();
+      n = n.finite()
     }
-    return n;
+    return n
   },
-  string: (shape) => {
-    let s = shape.coerce ? z.coerce.string() : z.string();
+  string: (shape, ctx) => {
+    let s = shape.coerce ? z.coerce.string() : z.string()
     if (shape.min !== undefined) {
-      s = s.min(shape.min);
+      s = s.min(shape.min)
     }
     if (shape.max !== undefined) {
-      s = s.max(shape.max);
+      s = s.max(shape.max)
     }
     if (shape.length !== undefined) {
-      s = s.length(shape.length);
+      s = s.length(shape.length)
     }
     if (shape.startsWith !== undefined) {
-      s = s.startsWith(shape.startsWith);
+      s = s.startsWith(shape.startsWith)
     }
     if (shape.endsWith !== undefined) {
-      s = s.endsWith(shape.endsWith);
+      s = s.endsWith(shape.endsWith)
     }
-    if ("includes" in shape) {
-      s = s.includes(shape.includes, { position: shape.position });
+    if ('includes' in shape) {
+      s = s.includes(shape.includes, { position: shape.position })
     }
-    if ("regex" in shape) {
-      s = s.regex(new RegExp(shape.regex, shape.flags));
+    if ('regex' in shape) {
+      s = s.regex(new RegExp(shape.regex, shape.flags))
     }
-    if ("kind" in shape) {
-      if (shape.kind == "ip") {
-        s = s.ip({ version: shape.version });
-      } else if (shape.kind == "datetime") {
-        s = s.datetime({ offset: shape.offset, precision: shape.precision });
+    if ('kind' in shape) {
+      if (shape.kind == 'ip') {
+        s = s.ip({ version: shape.version })
+      } else if (shape.kind == 'datetime') {
+        s = s.datetime({ offset: shape.offset, precision: shape.precision })
       } else {
-        s = s[shape.kind]();
+        s = s[shape.kind]()
       }
     }
 
-    return s;
+    return s
   },
-  boolean: (shape) => (shape.coerce ? z.coerce.boolean() : z.boolean()),
-  nan: () => z.nan(),
-  bigInt: (shape) => {
-    let i = shape.coerce ? z.coerce.bigint() : z.bigint();
+  boolean: (shape, ctx) => (shape.coerce ? z.coerce.boolean() : z.boolean()),
+  nan: (shape, ctx) => z.nan(),
+  bigInt: (shape, ctx) => {
+    let i = shape.coerce ? z.coerce.bigint() : z.bigint()
     if (shape.min !== undefined) {
-      const min = BigInt(shape.min);
-      i = shape.minInclusive ? i.min(min) : i.gt(min);
+      const min = BigInt(shape.min)
+      i = shape.minInclusive ? i.min(min) : i.gt(min)
     }
     if (shape.max !== undefined) {
-      const max = BigInt(shape.max);
-      i = shape.maxInclusive ? i.max(max) : i.lt(max);
+      const max = BigInt(shape.max)
+      i = shape.maxInclusive ? i.max(max) : i.lt(max)
     }
     if (shape.multipleOf !== undefined) {
-      const multipleOf = BigInt(shape.multipleOf);
-      i = i.multipleOf(multipleOf);
+      const multipleOf = BigInt(shape.multipleOf)
+      i = i.multipleOf(multipleOf)
     }
-    return i;
+    return i
   },
-  date: (shape) => {
-    let i = shape.coerce ? z.coerce.date() : z.date();
+  date: (shape, ctx) => {
+    let i = shape.coerce ? z.coerce.date() : z.date()
     if (shape.min !== undefined) {
-      i = i.min(new Date(shape.min));
+      i = i.min(new Date(shape.min))
     }
     if (shape.max !== undefined) {
-      i = i.max(new Date(shape.max));
+      i = i.max(new Date(shape.max))
     }
-    return i;
+    return i
   },
-  undefined: () => z.undefined(),
-  null: () => z.null(),
-  any: () => z.any(),
-  unknown: () => z.unknown(),
-  never: () => z.never(),
-  void: () => z.void(),
+  undefined: (shape, ctx) => z.undefined(),
+  null: (shape, ctx) => z.null(),
+  any: (shape, ctx) => z.any(),
+  unknown: (shape, ctx) => z.unknown(),
+  never: (shape, ctx) => z.never(),
+  void: (shape, ctx) => z.void(),
 
-  literal: (shape) => z.literal(shape.value),
+  literal: (shape, ctx) => z.literal(shape.value),
 
-  tuple: ((shape: SzTuple) => {
-    let i = z.tuple(shape.items.map(dezerialize) as any);
+  tuple: (shape: SzTuple, ctx) => {
+    let i = z.tuple(
+      shape.items.map((item) => dezerializeWithContext(item, ctx)) as any
+    )
     if (shape.rest) {
-      i = i.rest(dezerialize(shape.rest) as any);
+      i = i.rest(dezerializeWithContext(shape.rest, ctx) as any)
     }
-    return i;
-  }) as any,
-  set: ((shape: SzSet) => {
-    let i = z.set(dezerialize(shape.value));
+    return i
+  },
+  set: (shape: SzSet, ctx) => {
+    let i = z.set(dezerializeWithContext(shape.value, ctx))
     if (shape.minSize !== undefined) {
-      i = i.min(shape.minSize);
+      i = i.min(shape.minSize)
     }
     if (shape.maxSize !== undefined) {
-      i = i.max(shape.maxSize);
+      i = i.max(shape.maxSize)
     }
-    return i;
-  }) as any,
-  array: ((shape: SzArray) => {
-    let i = z.array(dezerialize(shape.element));
+    return i
+  },
+  array: (shape: SzArray, ctx) => {
+    let i = z.array(dezerializeWithContext(shape.element, ctx))
     if (shape.minLength !== undefined) {
-      i = i.min(shape.minLength);
+      i = i.min(shape.minLength)
     }
     if (shape.maxLength !== undefined) {
-      i = i.max(shape.maxLength);
+      i = i.max(shape.maxLength)
     }
-    return i;
-  }) as any,
-
-  object: ((shape: SzObject) =>
+    return i
+  },
+  object: (shape: SzObject, ctx) =>
     z.object(
       Object.fromEntries(
         Object.entries(shape.properties).map(([key, value]) => [
           key,
-          dezerialize(value),
+          dezerializeWithContext(value, ctx),
         ])
       )
-    )) as any,
-  record: ((shape: SzRecord) =>
-    z.record(dezerialize(shape.key), dezerialize(shape.value))) as any,
-  map: ((shape: SzMap<any, any>) =>
-    z.map(dezerialize(shape.key), dezerialize(shape.value))) as any,
-
-  enum: ((shape: SzEnum) => z.enum(shape.values)) as any,
-
-  union: ((shape: SzUnion) =>
-    z.union(shape.options.map(dezerialize) as any)) as any,
-  discriminatedUnion: ((shape: SzDiscriminatedUnion) =>
+    ),
+  record: (shape: SzRecord, ctx) =>
+    z.record(
+      dezerializeWithContext(shape.key, ctx),
+      dezerializeWithContext(shape.value, ctx)
+    ),
+  map: (shape: SzMap<any, any>, ctx) =>
+    z.map(
+      dezerializeWithContext(shape.key, ctx),
+      dezerializeWithContext(shape.value, ctx)
+    ),
+  enum: (shape: SzEnum, ctx) => z.enum(shape.values),
+  union: (shape: SzUnion, ctx) =>
+    z.union(
+      shape.options.map((option) => dezerializeWithContext(option, ctx)) as any
+    ),
+  discriminatedUnion: (shape: SzDiscriminatedUnion, ctx) =>
     z.discriminatedUnion(
       shape.discriminator,
-      shape.options.map(dezerialize) as any
-    )) as any,
-  intersection: ((shape: SzIntersection) =>
-    z.intersection(dezerialize(shape.left), dezerialize(shape.right))) as any,
-
-  function: ((shape: SzFunction<any, any>) =>
+      shape.options.map((option) => dezerializeWithContext(option, ctx)) as any
+    ),
+  intersection: (shape: SzIntersection, ctx) =>
+    z.intersection(
+      dezerializeWithContext(shape.left, ctx),
+      dezerializeWithContext(shape.right, ctx)
+    ),
+  function: (shape: SzFunction<any, any>, ctx) =>
     z.function(
-      dezerialize(shape.args) as any,
-      dezerialize(shape.returns)
-    )) as any,
-  promise: ((shape: SzPromise) => z.promise(dezerialize(shape.value))) as any,
-} satisfies DezerializersMap as DezerializersMap;
+      dezerializeWithContext(shape.args, ctx) as any,
+      dezerializeWithContext(shape.returns, ctx)
+    ),
+  promise: (shape: SzPromise, ctx) =>
+    z.promise(dezerializeWithContext(shape.value, ctx)),
+  lazy: (shape: SzLazy, ctx) => {
+    return z.lazy(() => dezerializeWithContext(shape.schema, ctx))
+  },
+} satisfies DezerializersMap as DezerializersMap
 
 // Must match the exported Dezerialize types
 // export function dezerialize<T extends SzType>(_shape: T): Dezerialize<T>;
 export function dezerialize(shape: SzType): ZodTypes {
-  if ("isOptional" in shape) {
-    const { isOptional, ...rest } = shape;
-    const inner = dezerialize(rest);
-    return isOptional ? inner.optional() : inner;
+  const ctx: DezerializeContext = {
+    seenSchemas: new Map(),
+    pendingSchemas: new Map(),
+  }
+  return dezerializeWithContext(shape, ctx)
+}
+function dezerializeWithContext(
+  shape: SzType,
+  ctx: DezerializeContext
+): ZodTypes {
+  if (ctx.seenSchemas.has(shape)) {
+    return ctx.seenSchemas.get(shape) as ZodTypes
   }
 
-  if ("isNullable" in shape) {
-    const { isNullable, ...rest } = shape;
-    const inner = dezerialize(rest);
-    return isNullable ? inner.nullable() : inner;
+  if (ctx.pendingSchemas.has(shape)) {
+    return ctx.pendingSchemas.get(shape) as ZodTypes
   }
 
-  if ("defaultValue" in shape) {
-    const { defaultValue, ...rest } = shape;
-    const inner = dezerialize(rest);
-    return inner.default(defaultValue);
+  let result: ZodTypes
+  if ('isOptional' in shape) {
+    const { isOptional, ...rest } = shape
+    const inner = dezerializeWithContext(rest, ctx)
+    result = isOptional ? inner.optional() : inner
+  } else if ('isNullable' in shape) {
+    const { isNullable, ...rest } = shape
+    const inner = dezerializeWithContext(rest, ctx)
+    result = isNullable ? inner.nullable() : inner
+  } else if ('defaultValue' in shape) {
+    const { defaultValue, ...rest } = shape
+    const inner = dezerializeWithContext(rest, ctx)
+    result = inner.default(defaultValue)
+  } else {
+    result = dezerializers[shape.type](shape as any, ctx)
   }
 
-  return dezerializers[shape.type](shape as any);
+  ctx.pendingSchemas.delete(shape)
+  ctx.seenSchemas.set(shape, result)
+
+  return result
 }
