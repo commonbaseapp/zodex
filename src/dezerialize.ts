@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from "zod";
 import {
   SzOptional,
   SzNullable,
@@ -31,18 +31,18 @@ import {
   SzVoid,
   SzLazy,
   SzRef,
-} from './types'
-import { ZodRef, ZodTypes } from './zod-types'
-import SuperJSON from 'superjson'
+} from "./types";
+import { ZodRef, ZodTypes } from "./zod-types";
+import SuperJSON from "superjson";
 
 type DistributiveOmit<T, K extends keyof any> = T extends any
   ? Omit<T, K>
-  : never
-type OmitKey<T, K> = DistributiveOmit<T, keyof K>
+  : never;
+type OmitKey<T, K> = DistributiveOmit<T, keyof K>;
 
 interface DezerializeContext {
-  seenSchemas: Map<SzType, ZodTypes>
-  pendingSchemas: Map<SzType, ZodTypes>
+  seenSchemas: Map<SzType, ZodTypes>;
+  pendingSchemas: Map<SzType, ZodTypes>;
 }
 
 export type Dezerialize<T extends SzType> =
@@ -99,7 +99,7 @@ export type Dezerialize<T extends SzType> =
     ? z.ZodArray<Dezerialize<Element>> // Key/Value Collections
     : T extends SzObject<infer Properties>
     ? z.ZodObject<{
-        [Property in keyof Properties]: Dezerialize<Properties[Property]>
+        [Property in keyof Properties]: Dezerialize<Properties[Property]>;
       }>
     : T extends SzRecord<infer Key, infer Value>
     ? z.ZodRecord<Dezerialize<Key>, Dezerialize<Value>>
@@ -118,100 +118,100 @@ export type Dezerialize<T extends SzType> =
     : T extends SzPromise<infer Value>
     ? z.ZodPromise<Dezerialize<Value>>
     : T extends SzLazy
-    ? z.ZodLazy<() => Dezerialize<T['schema']>>
+    ? z.ZodLazy<() => Dezerialize<T["schema"]>>
     : T extends SzRef
     ? ZodRef
-    : unknown
+    : unknown;
 
 type DezerializersMap = {
-  [T in SzType['type']]: (
+  [T in SzType["type"]]: (
     shape: Extract<SzType, { type: T }>,
     ctx: DezerializeContext
-  ) => ZodTypes //Dezerialize<Extract<SzType, { type: T }>>;
-}
+  ) => ZodTypes; //Dezerialize<Extract<SzType, { type: T }>>;
+};
 
 const dezerializers = {
   number: (shape, ctx) => {
-    let n = shape.coerce ? z.coerce.number() : z.number()
+    let n = shape.coerce ? z.coerce.number() : z.number();
     if (shape.min !== undefined) {
-      n = shape.minInclusive ? n.min(shape.min) : n.gt(shape.min)
+      n = shape.minInclusive ? n.min(shape.min) : n.gt(shape.min);
     }
     if (shape.max !== undefined) {
-      n = shape.maxInclusive ? n.max(shape.max) : n.lt(shape.max)
+      n = shape.maxInclusive ? n.max(shape.max) : n.lt(shape.max);
     }
     if (shape.multipleOf !== undefined) {
-      n = n.multipleOf(shape.multipleOf)
+      n = n.multipleOf(shape.multipleOf);
     }
     if (shape.int) {
-      n = n.int()
+      n = n.int();
     }
     if (shape.finite) {
-      n = n.finite()
+      n = n.finite();
     }
-    return n
+    return n;
   },
   string: (shape, ctx) => {
-    let s = shape.coerce ? z.coerce.string() : z.string()
+    let s = shape.coerce ? z.coerce.string() : z.string();
     if (shape.min !== undefined) {
-      s = s.min(shape.min)
+      s = s.min(shape.min);
     }
     if (shape.max !== undefined) {
-      s = s.max(shape.max)
+      s = s.max(shape.max);
     }
     if (shape.length !== undefined) {
-      s = s.length(shape.length)
+      s = s.length(shape.length);
     }
     if (shape.startsWith !== undefined) {
-      s = s.startsWith(shape.startsWith)
+      s = s.startsWith(shape.startsWith);
     }
     if (shape.endsWith !== undefined) {
-      s = s.endsWith(shape.endsWith)
+      s = s.endsWith(shape.endsWith);
     }
-    if ('includes' in shape) {
-      s = s.includes(shape.includes, { position: shape.position })
+    if ("includes" in shape) {
+      s = s.includes(shape.includes, { position: shape.position });
     }
-    if ('regex' in shape) {
-      s = s.regex(new RegExp(shape.regex, shape.flags))
+    if ("regex" in shape) {
+      s = s.regex(new RegExp(shape.regex, shape.flags));
     }
-    if ('kind' in shape) {
-      if (shape.kind == 'ip') {
-        s = s.ip({ version: shape.version })
-      } else if (shape.kind == 'datetime') {
-        s = s.datetime({ offset: shape.offset, precision: shape.precision })
+    if ("kind" in shape) {
+      if (shape.kind == "ip") {
+        s = s.ip({ version: shape.version });
+      } else if (shape.kind == "datetime") {
+        s = s.datetime({ offset: shape.offset, precision: shape.precision });
       } else {
-        s = s[shape.kind]()
+        s = s[shape.kind]();
       }
     }
 
-    return s
+    return s;
   },
   boolean: (shape, ctx) => (shape.coerce ? z.coerce.boolean() : z.boolean()),
   nan: (shape, ctx) => z.nan(),
   bigInt: (shape, ctx) => {
-    let i = shape.coerce ? z.coerce.bigint() : z.bigint()
+    let i = shape.coerce ? z.coerce.bigint() : z.bigint();
     if (shape.min !== undefined) {
-      const min = BigInt(shape.min)
-      i = shape.minInclusive ? i.min(min) : i.gt(min)
+      const min = BigInt(shape.min);
+      i = shape.minInclusive ? i.min(min) : i.gt(min);
     }
     if (shape.max !== undefined) {
-      const max = BigInt(shape.max)
-      i = shape.maxInclusive ? i.max(max) : i.lt(max)
+      const max = BigInt(shape.max);
+      i = shape.maxInclusive ? i.max(max) : i.lt(max);
     }
     if (shape.multipleOf !== undefined) {
-      const multipleOf = BigInt(shape.multipleOf)
-      i = i.multipleOf(multipleOf)
+      const multipleOf = BigInt(shape.multipleOf);
+      i = i.multipleOf(multipleOf);
     }
-    return i
+    return i;
   },
   date: (shape, ctx) => {
-    let i = shape.coerce ? z.coerce.date() : z.date()
+    let i = shape.coerce ? z.coerce.date() : z.date();
     if (shape.min !== undefined) {
-      i = i.min(new Date(shape.min))
+      i = i.min(new Date(shape.min));
     }
     if (shape.max !== undefined) {
-      i = i.max(new Date(shape.max))
+      i = i.max(new Date(shape.max));
     }
-    return i
+    return i;
   },
   undefined: (shape, ctx) => z.undefined(),
   null: (shape, ctx) => z.null(),
@@ -225,31 +225,31 @@ const dezerializers = {
   tuple: (shape: SzTuple, ctx) => {
     let i = z.tuple(
       shape.items.map((item) => dezerializeWithContext(item, ctx)) as any
-    )
+    );
     if (shape.rest) {
-      i = i.rest(dezerializeWithContext(shape.rest, ctx) as any)
+      i = i.rest(dezerializeWithContext(shape.rest, ctx) as any);
     }
-    return i
+    return i;
   },
   set: (shape: SzSet, ctx) => {
-    let i = z.set(dezerializeWithContext(shape.value, ctx))
+    let i = z.set(dezerializeWithContext(shape.value, ctx));
     if (shape.minSize !== undefined) {
-      i = i.min(shape.minSize)
+      i = i.min(shape.minSize);
     }
     if (shape.maxSize !== undefined) {
-      i = i.max(shape.maxSize)
+      i = i.max(shape.maxSize);
     }
-    return i
+    return i;
   },
   array: (shape: SzArray, ctx) => {
-    let i = z.array(dezerializeWithContext(shape.element, ctx))
+    let i = z.array(dezerializeWithContext(shape.element, ctx));
     if (shape.minLength !== undefined) {
-      i = i.min(shape.minLength)
+      i = i.min(shape.minLength);
     }
     if (shape.maxLength !== undefined) {
-      i = i.max(shape.maxLength)
+      i = i.max(shape.maxLength);
     }
-    return i
+    return i;
   },
   object: (shape: SzObject, ctx) =>
     z.object(
@@ -294,115 +294,115 @@ const dezerializers = {
     z.promise(dezerializeWithContext(shape.value, ctx)),
   lazy: (shape: SzLazy, ctx) => {
     if (ctx.seenSchemas.has(shape.schema)) {
-      return z.lazy(() => ctx.seenSchemas.get(shape.schema) as ZodTypes)
+      return z.lazy(() => ctx.seenSchemas.get(shape.schema) as ZodTypes);
     }
-    const lazySchema = z.lazy(() => dezerializeWithContext(shape.schema, ctx))
-    ctx.seenSchemas.set(shape.schema, lazySchema)
-    return lazySchema
+    const lazySchema = z.lazy(() => dezerializeWithContext(shape.schema, ctx));
+    ctx.seenSchemas.set(shape.schema, lazySchema);
+    return lazySchema;
   },
   ref: (shape, ctx) => {
     if (!ctx.seenSchemas.has(shape.ref)) {
-      throw new Error(`Reference not found for ref: ${shape.ref}`)
+      throw new Error(`Reference not found for ref: ${shape.ref}`);
     }
-    return ctx.seenSchemas.get(shape.ref) as ZodTypes
+    return ctx.seenSchemas.get(shape.ref) as ZodTypes;
   },
-} satisfies DezerializersMap as DezerializersMap
+} satisfies DezerializersMap as DezerializersMap;
 
 function preRegisterSchemas(shape, ctx) {
   if (shape.id) {
     if (!ctx.seenSchemas.has(shape.id)) {
-      ctx.seenSchemas.set(shape.id, null) // Placeholder
+      ctx.seenSchemas.set(shape.id, null); // Placeholder
     }
   }
 
-  if (shape.type === 'object' && shape.properties) {
+  if (shape.type === "object" && shape.properties) {
     for (const key in shape.properties) {
-      preRegisterSchemas(shape.properties[key], ctx)
+      preRegisterSchemas(shape.properties[key], ctx);
     }
-  } else if (shape.type === 'array' && shape.element) {
-    preRegisterSchemas(shape.element, ctx)
-  } else if (shape.type === 'ref') {
+  } else if (shape.type === "array" && shape.element) {
+    preRegisterSchemas(shape.element, ctx);
+  } else if (shape.type === "ref") {
     if (!ctx.seenSchemas.has(shape.ref)) {
-      ctx.seenSchemas.set(shape.ref, null) // Placeholder
+      ctx.seenSchemas.set(shape.ref, null); // Placeholder
     }
   }
 }
 
 function dezerializeWithContext(shape, ctx) {
   if (shape.id && ctx.seenSchemas.has(shape.id)) {
-    const existingSchema = ctx.seenSchemas.get(shape.id)
+    const existingSchema = ctx.seenSchemas.get(shape.id);
     if (existingSchema) {
-      return existingSchema
+      return existingSchema;
     }
   }
 
   if (ctx.pendingSchemas.has(shape)) {
-    return z.lazy(() => ctx.pendingSchemas.get(shape))
+    return z.lazy(() => ctx.pendingSchemas.get(shape));
   }
 
-  ctx.pendingSchemas.set(shape, shape)
+  ctx.pendingSchemas.set(shape, shape);
 
-  let result
+  let result;
   try {
-    if ('isOptional' in shape) {
-      const { isOptional, ...rest } = shape
-      const inner = resolveReferences(rest, ctx)
-      result = isOptional ? inner.optional() : inner
-    } else if ('isNullable' in shape) {
-      const { isNullable, ...rest } = shape
-      const inner = resolveReferences(rest, ctx)
-      result = isNullable ? inner.nullable() : inner
-    } else if ('defaultValue' in shape) {
-      const { defaultValue, ...rest } = shape
-      const inner = resolveReferences(rest, ctx)
-      result = inner.default(defaultValue)
-    } else if (shape.type === 'lazy') {
-      result = z.lazy(() => resolveReferences(shape.schema, ctx))
-    } else if (shape.type === 'ref') {
+    if ("isOptional" in shape) {
+      const { isOptional, ...rest } = shape;
+      const inner = resolveReferences(rest, ctx);
+      result = isOptional ? inner.optional() : inner;
+    } else if ("isNullable" in shape) {
+      const { isNullable, ...rest } = shape;
+      const inner = resolveReferences(rest, ctx);
+      result = isNullable ? inner.nullable() : inner;
+    } else if ("defaultValue" in shape) {
+      const { defaultValue, ...rest } = shape;
+      const inner = resolveReferences(rest, ctx);
+      result = inner.default(defaultValue);
+    } else if (shape.type === "lazy") {
+      result = z.lazy(() => resolveReferences(shape.schema, ctx));
+    } else if (shape.type === "ref") {
       if (ctx.seenSchemas.has(shape.ref)) {
-        result = ctx.seenSchemas.get(shape.ref)
+        result = ctx.seenSchemas.get(shape.ref);
       } else {
-        throw new Error(`Reference not found for ref: ${shape.ref}`)
+        throw new Error(`Reference not found for ref: ${shape.ref}`);
       }
     } else if (shape.type in dezerializers) {
-      result = dezerializers[shape.type](shape, ctx)
+      result = dezerializers[shape.type](shape, ctx);
     } else {
-      throw new Error(`Unknown shape type: ${shape.type}`)
+      throw new Error(`Unknown shape type: ${shape.type}`);
     }
   } catch (error) {
-    console.error('Error deserializing shape', { shape, ctx, error })
-    throw error
+    console.error("Error deserializing shape", { shape, ctx, error });
+    throw error;
   }
 
-  ctx.pendingSchemas.set(shape, result)
+  ctx.pendingSchemas.set(shape, result);
 
   if (shape.id) {
-    ctx.seenSchemas.set(shape.id, result)
+    ctx.seenSchemas.set(shape.id, result);
   } else {
-    ctx.seenSchemas.set(shape, result)
+    ctx.seenSchemas.set(shape, result);
   }
 
-  return result
+  return result;
 }
 
 function resolveReferences(shape, ctx) {
-  if (typeof shape === 'object' && 'ref' in shape) {
+  if (typeof shape === "object" && "ref" in shape) {
     if (ctx.seenSchemas.has(shape.ref)) {
-      const existingSchema = ctx.seenSchemas.get(shape.ref)
+      const existingSchema = ctx.seenSchemas.get(shape.ref);
       if (existingSchema) {
-        return existingSchema
+        return existingSchema;
       } else {
-        return z.lazy(() => ctx.seenSchemas.get(shape.ref))
+        return z.lazy(() => ctx.seenSchemas.get(shape.ref));
       }
     } else {
-      throw new Error(`Reference not found for ref: ${shape.ref}`)
+      throw new Error(`Reference not found for ref: ${shape.ref}`);
     }
   }
-  return dezerializeWithContext(shape, ctx)
+  return dezerializeWithContext(shape, ctx);
 }
 
 function preRegister(shape, ctx) {
-  preRegisterSchemas(shape, ctx)
+  preRegisterSchemas(shape, ctx);
 }
 
 // Must match the exported Dezerialize types
@@ -411,9 +411,9 @@ export function dezerialize(shape) {
   const ctx = {
     seenSchemas: new Map(),
     pendingSchemas: new Map(),
-  }
+  };
 
-  preRegister(shape, ctx)
+  preRegister(shape, ctx);
 
-  return dezerializeWithContext(shape, ctx)
+  return dezerializeWithContext(shape, ctx);
 }
