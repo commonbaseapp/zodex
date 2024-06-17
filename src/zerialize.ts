@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod'
 import {
   SzOptional,
   SzNullable,
@@ -20,8 +20,8 @@ import {
   SzPrimitive,
   SzType,
   STRING_KINDS,
-} from './types';
-import { ZodTypes, ZTypeName } from './zod-types';
+} from './types'
+import { ZodRef, ZodTypes, ZTypeName } from './zod-types'
 
 export const PRIMITIVES = {
   ZodString: 'string',
@@ -40,11 +40,11 @@ export const PRIMITIVES = {
   Partial<
     Record<Exclude<z.ZodFirstPartyTypeKind, 'ZodSymbol'>, SzPrimitive['type']>
   >
->;
-export type PrimitiveMap = typeof PRIMITIVES;
+>
+export type PrimitiveMap = typeof PRIMITIVES
 
 type IsZodPrimitive<T extends ZodTypes> =
-  ZTypeName<T> extends keyof PrimitiveMap ? any : never;
+  ZTypeName<T> extends keyof PrimitiveMap ? any : never
 
 // Types must match the exported zerialize function's implementation
 export type Zerialize<T extends ZodTypes> =
@@ -66,7 +66,7 @@ export type Zerialize<T extends ZodTypes> =
     : // List Collections
     T extends z.ZodTuple<infer Items>
     ? {
-        [Index in keyof Items]: Zerialize<Items[Index]>;
+        [Index in keyof Items]: Zerialize<Items[Index]>
       } extends infer SzItems extends [SzType, ...SzType[]] | []
       ? SzTuple<SzItems>
       : SzType
@@ -77,7 +77,7 @@ export type Zerialize<T extends ZodTypes> =
     : // Key/Value Collections
     T extends z.ZodObject<infer Properties>
     ? SzObject<{
-        [Property in keyof Properties]: Zerialize<Properties[Property]>;
+        [Property in keyof Properties]: Zerialize<Properties[Property]>
       }>
     : T extends z.ZodRecord<infer Key, infer Value>
     ? SzRecord<Zerialize<Key>, Zerialize<Value>>
@@ -91,7 +91,7 @@ export type Zerialize<T extends ZodTypes> =
     : // Union/Intersection
     T extends z.ZodUnion<infer Options>
     ? {
-        [Index in keyof Options]: Zerialize<Options[Index]>;
+        [Index in keyof Options]: Zerialize<Options[Index]>
       } extends infer SzOptions extends [SzType, ...SzType[]]
       ? SzUnion<SzOptions>
       : SzType
@@ -99,7 +99,7 @@ export type Zerialize<T extends ZodTypes> =
     ? SzDiscriminatedUnion<
         Discriminator,
         {
-          [Index in keyof Options]: Zerialize<Options[Index]>;
+          [Index in keyof Options]: Zerialize<Options[Index]>
         }
       >
     : T extends z.ZodIntersection<infer L, infer R>
@@ -122,25 +122,26 @@ export type Zerialize<T extends ZodTypes> =
     ? Zerialize<Out>
     : T extends z.ZodCatch<infer Inner>
     ? Zerialize<Inner>
-    : SzType;
+    : SzType
 
 type ZodTypeMap = {
-  [Key in ZTypeName<ZodTypes>]: Extract<ZodTypes, { _def: { typeName: Key } }>;
-};
+  [Key in ZTypeName<ZodTypes>]: Extract<ZodTypes, { _def: { typeName: Key } }>
+}
 type ZerializersMap = {
   [Key in ZTypeName<ZodTypes>]: (
     def: ZodTypeMap[Key]['_def'],
     ctx: ZerializeContext
-  ) => any; //Zerialize<ZodTypeMap[Key]>;
-};
+  ) => any //Zerialize<ZodTypeMap[Key]>;
+}
 
 interface ZerializeContext {
-  seenSchemas: Map<ZodTypes, any>;
-  pendingSchemas: Map<ZodTypes, any>;
+  seenSchemas: Map<ZodTypes, any>
+  pendingSchemas: Map<ZodTypes, any>
+  nextId: number
 }
 
 const s = (schema: ZodTypes, ctx: ZerializeContext) =>
-  zerializeWithContext(schema, ctx);
+  zerializeWithContext(schema, ctx)
 const zerializers = {
   ZodOptional: (def, ctx) => ({ ...s(def.innerType, ctx), isOptional: true }),
   ZodNullable: (def, ctx) => ({ ...s(def.innerType, ctx), isNullable: true }),
@@ -175,11 +176,11 @@ const zerializers = {
           : {}),
       }),
       {}
-    );
+    )
     return Object.assign(
       { type: 'number', ...checks },
       def.coerce ? { coerce: true } : {}
-    );
+    )
   },
   ZodString: (def) => {
     const checks = def.checks.reduce(
@@ -220,11 +221,11 @@ const zerializers = {
           : {}),
       }),
       {}
-    );
+    )
     return Object.assign(
       { type: 'string', ...checks },
       def.coerce ? { coerce: true } : {}
-    );
+    )
   },
   ZodBoolean: (def) =>
     Object.assign({ type: 'boolean' }, def.coerce ? { coerce: true } : {}),
@@ -251,11 +252,11 @@ const zerializers = {
           : {}),
       }),
       {}
-    );
+    )
     return Object.assign(
       { type: 'bigInt', ...checks },
       def.coerce ? { coerce: true } : {}
-    );
+    )
   },
   ZodDate: (def) => {
     const checks = def.checks.reduce(
@@ -271,11 +272,11 @@ const zerializers = {
           : {}),
       }),
       {}
-    );
+    )
     return Object.assign(
       { type: 'date', ...checks },
       def.coerce ? { coerce: true } : {}
-    );
+    )
   },
   ZodUndefined: () => ({ type: 'undefined' }),
   ZodNull: () => ({ type: 'null' }),
@@ -363,17 +364,25 @@ const zerializers = {
 
   ZodLazy: (def, ctx) => {
     if (ctx.seenSchemas.has(def.getter())) {
-      return { type: 'lazy', ref: ctx.seenSchemas.get(def.getter()) };
+      return { type: 'lazy', ref: ctx.seenSchemas.get(def.getter()) }
     }
-    const lazySchema = s(def.getter(), ctx);
-    ctx.seenSchemas.set(def.getter(), lazySchema);
-    return { type: 'lazy', schema: lazySchema };
+    const lazySchema = s(def.getter(), ctx)
+    ctx.seenSchemas.set(def.getter(), lazySchema)
+    return { type: 'lazy', schema: lazySchema }
   },
   ZodEffects: (def, ctx) => s(def.schema, ctx),
   ZodBranded: (def, ctx) => s(def.type, ctx),
   ZodPipeline: (def, ctx) => s(def.out, ctx),
   ZodCatch: (def, ctx) => s(def.innerType, ctx),
-} satisfies ZerializersMap as ZerializersMap;
+  ZodRef: (def, ctx) => {
+    if (ctx.seenSchemas.has(def.schema)) {
+      return { type: 'ref', ref: ctx.seenSchemas.get(def.schema) }
+    }
+    const refSchema = s(def.schema, ctx)
+    ctx.seenSchemas.set(def.schema, refSchema)
+    return { type: 'ref', ref: refSchema }
+  },
+} satisfies ZerializersMap as ZerializersMap
 
 // Must match the exported Zerialize types
 // export function zerialize<T extends ZodTypes>(_schema: T): Zerialize<T> {
@@ -381,28 +390,31 @@ export function zerialize(schema: ZodTypes): unknown {
   const ctx: ZerializeContext = {
     seenSchemas: new Map(),
     pendingSchemas: new Map(),
-  };
-  return zerializeWithContext(schema, ctx);
+    nextId: 1,
+  }
+  return zerializeWithContext(schema, ctx)
 }
 
 function zerializeWithContext(
   schema: ZodTypes,
   ctx: ZerializeContext
 ): unknown {
-  const { _def: def } = schema;
+  const { _def: def } = schema
+
   if (ctx.seenSchemas.has(schema)) {
-    return ctx.seenSchemas.get(schema);
+    return { type: 'ref', ref: ctx.seenSchemas.get(schema) }
   }
 
   if (ctx.pendingSchemas.has(schema)) {
-    return { type: 'ref', schema: ctx.pendingSchemas.get(schema) };
+    return { type: 'ref', ref: ctx.pendingSchemas.get(schema) }
   }
 
-  ctx.pendingSchemas.set(schema, schema);
+  const schemaId = ctx.nextId++
+  ctx.pendingSchemas.set(schema, schemaId)
 
-  const serialized = zerializers[def.typeName](def as any, ctx);
-  ctx.seenSchemas.set(schema, serialized);
-  ctx.pendingSchemas.delete(schema);
+  const serialized = zerializers[def.typeName](def as any, ctx)
+  ctx.seenSchemas.set(schema, schemaId)
+  ctx.pendingSchemas.delete(schema)
 
-  return serialized;
+  return { ...serialized, id: schemaId }
 }
