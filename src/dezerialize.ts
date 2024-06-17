@@ -33,7 +33,6 @@ import {
   SzRef,
 } from "./types";
 import { ZodRef, ZodTypes } from "./zod-types";
-import SuperJSON from "superjson";
 
 type DistributiveOmit<T, K extends keyof any> = T extends any
   ? Omit<T, K>
