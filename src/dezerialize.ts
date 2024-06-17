@@ -30,8 +30,10 @@ import {
   SzUnknown,
   SzVoid,
   SzLazy,
+  SzRef,
 } from './types'
-import { ZodTypes } from './zod-types'
+import { ZodRef, ZodTypes } from './zod-types'
+import SuperJSON from 'superjson'
 
 type DistributiveOmit<T, K extends keyof any> = T extends any
   ? Omit<T, K>
@@ -117,6 +119,8 @@ export type Dezerialize<T extends SzType> =
     ? z.ZodPromise<Dezerialize<Value>>
     : T extends SzLazy
     ? z.ZodLazy<() => Dezerialize<T['schema']>>
+    : T extends SzRef
+    ? ZodRef
     : unknown
 
 type DezerializersMap = {
@@ -125,6 +129,7 @@ type DezerializersMap = {
     ctx: DezerializeContext
   ) => ZodTypes //Dezerialize<Extract<SzType, { type: T }>>;
 }
+
 const dezerializers = {
   number: (shape, ctx) => {
     let n = shape.coerce ? z.coerce.number() : z.number()
@@ -288,50 +293,127 @@ const dezerializers = {
   promise: (shape: SzPromise, ctx) =>
     z.promise(dezerializeWithContext(shape.value, ctx)),
   lazy: (shape: SzLazy, ctx) => {
-    return z.lazy(() => dezerializeWithContext(shape.schema, ctx))
+    if (ctx.seenSchemas.has(shape.schema)) {
+      return z.lazy(() => ctx.seenSchemas.get(shape.schema) as ZodTypes)
+    }
+    const lazySchema = z.lazy(() => dezerializeWithContext(shape.schema, ctx))
+    ctx.seenSchemas.set(shape.schema, lazySchema)
+    return lazySchema
+  },
+  ref: (shape, ctx) => {
+    if (!ctx.seenSchemas.has(shape.ref)) {
+      throw new Error(`Reference not found for ref: ${shape.ref}`)
+    }
+    return ctx.seenSchemas.get(shape.ref) as ZodTypes
   },
 } satisfies DezerializersMap as DezerializersMap
 
-// Must match the exported Dezerialize types
-// export function dezerialize<T extends SzType>(_shape: T): Dezerialize<T>;
-export function dezerialize(shape: SzType): ZodTypes {
-  const ctx: DezerializeContext = {
-    seenSchemas: new Map(),
-    pendingSchemas: new Map(),
+function preRegisterSchemas(shape, ctx) {
+  if (shape.id) {
+    if (!ctx.seenSchemas.has(shape.id)) {
+      ctx.seenSchemas.set(shape.id, null) // Placeholder
+    }
   }
-  return dezerializeWithContext(shape, ctx)
+
+  if (shape.type === 'object' && shape.properties) {
+    for (const key in shape.properties) {
+      preRegisterSchemas(shape.properties[key], ctx)
+    }
+  } else if (shape.type === 'array' && shape.element) {
+    preRegisterSchemas(shape.element, ctx)
+  } else if (shape.type === 'ref') {
+    if (!ctx.seenSchemas.has(shape.ref)) {
+      ctx.seenSchemas.set(shape.ref, null) // Placeholder
+    }
+  }
 }
-function dezerializeWithContext(
-  shape: SzType,
-  ctx: DezerializeContext
-): ZodTypes {
-  if (ctx.seenSchemas.has(shape)) {
-    return ctx.seenSchemas.get(shape) as ZodTypes
+
+function dezerializeWithContext(shape, ctx) {
+  if (shape.id && ctx.seenSchemas.has(shape.id)) {
+    const existingSchema = ctx.seenSchemas.get(shape.id)
+    if (existingSchema) {
+      return existingSchema
+    }
   }
 
   if (ctx.pendingSchemas.has(shape)) {
-    return ctx.pendingSchemas.get(shape) as ZodTypes
+    return z.lazy(() => ctx.pendingSchemas.get(shape))
   }
 
-  let result: ZodTypes
-  if ('isOptional' in shape) {
-    const { isOptional, ...rest } = shape
-    const inner = dezerializeWithContext(rest, ctx)
-    result = isOptional ? inner.optional() : inner
-  } else if ('isNullable' in shape) {
-    const { isNullable, ...rest } = shape
-    const inner = dezerializeWithContext(rest, ctx)
-    result = isNullable ? inner.nullable() : inner
-  } else if ('defaultValue' in shape) {
-    const { defaultValue, ...rest } = shape
-    const inner = dezerializeWithContext(rest, ctx)
-    result = inner.default(defaultValue)
+  ctx.pendingSchemas.set(shape, shape)
+
+  let result
+  try {
+    if ('isOptional' in shape) {
+      const { isOptional, ...rest } = shape
+      const inner = resolveReferences(rest, ctx)
+      result = isOptional ? inner.optional() : inner
+    } else if ('isNullable' in shape) {
+      const { isNullable, ...rest } = shape
+      const inner = resolveReferences(rest, ctx)
+      result = isNullable ? inner.nullable() : inner
+    } else if ('defaultValue' in shape) {
+      const { defaultValue, ...rest } = shape
+      const inner = resolveReferences(rest, ctx)
+      result = inner.default(defaultValue)
+    } else if (shape.type === 'lazy') {
+      result = z.lazy(() => resolveReferences(shape.schema, ctx))
+    } else if (shape.type === 'ref') {
+      if (ctx.seenSchemas.has(shape.ref)) {
+        result = ctx.seenSchemas.get(shape.ref)
+      } else {
+        throw new Error(`Reference not found for ref: ${shape.ref}`)
+      }
+    } else if (shape.type in dezerializers) {
+      result = dezerializers[shape.type](shape, ctx)
+    } else {
+      throw new Error(`Unknown shape type: ${shape.type}`)
+    }
+  } catch (error) {
+    console.error('Error deserializing shape', { shape, ctx, error })
+    throw error
+  }
+
+  ctx.pendingSchemas.set(shape, result)
+
+  if (shape.id) {
+    ctx.seenSchemas.set(shape.id, result)
   } else {
-    result = dezerializers[shape.type](shape as any, ctx)
+    ctx.seenSchemas.set(shape, result)
   }
-
-  ctx.pendingSchemas.delete(shape)
-  ctx.seenSchemas.set(shape, result)
 
   return result
+}
+
+function resolveReferences(shape, ctx) {
+  if (typeof shape === 'object' && 'ref' in shape) {
+    if (ctx.seenSchemas.has(shape.ref)) {
+      const existingSchema = ctx.seenSchemas.get(shape.ref)
+      if (existingSchema) {
+        return existingSchema
+      } else {
+        return z.lazy(() => ctx.seenSchemas.get(shape.ref))
+      }
+    } else {
+      throw new Error(`Reference not found for ref: ${shape.ref}`)
+    }
+  }
+  return dezerializeWithContext(shape, ctx)
+}
+
+function preRegister(shape, ctx) {
+  preRegisterSchemas(shape, ctx)
+}
+
+// Must match the exported Dezerialize types
+// export function dezerialize<T extends SzType>(_shape: T): Dezerialize<T>;
+export function dezerialize(shape) {
+  const ctx = {
+    seenSchemas: new Map(),
+    pendingSchemas: new Map(),
+  }
+
+  preRegister(shape, ctx)
+
+  return dezerializeWithContext(shape, ctx)
 }
