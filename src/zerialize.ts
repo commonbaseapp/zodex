@@ -21,6 +21,7 @@ import {
   SzReadonly,
   SzPrimitive,
   SzType,
+  SzUnknown,
   STRING_KINDS,
 } from "./types";
 import { ZodTypes, ZTypeName } from "./zod-types";
@@ -88,7 +89,7 @@ export type Zerialize<T extends ZodTypes> =
     T extends z.ZodEnum<infer Values>
     ? SzEnum<Values>
     : T extends z.ZodNativeEnum<infer _Values>
-    ? { type: "unknown" }
+    ? SzUnknown
     : // Union/Intersection
     T extends z.ZodUnion<infer Options>
     ? {
