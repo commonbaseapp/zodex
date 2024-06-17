@@ -173,6 +173,12 @@ export type SzLazy = {
   schema: SzType
 }
 
+// Add this section
+export type SzRef = {
+  type: 'ref'
+  ref: number
+}
+
 // Modifiers
 export type SzNullable = { isNullable: boolean }
 export type SzOptional = { isOptional: boolean }
@@ -198,7 +204,8 @@ export type SzType = (
   | SzEnum<any>
   | SzPromise<any>
   | SzLazy
-) &
+  | SzRef
+) & // Add this line
   Partial<SzNullable & SzOptional & SzDefault<any>>
 
 export type SzUnionize<T extends SzType> =
