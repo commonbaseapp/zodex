@@ -65,11 +65,21 @@ test.each([
   p(z.string().url(), { type: "string", kind: "url" }),
   p(z.string().emoji(), { type: "string", kind: "emoji" }),
   p(z.string().uuid(), { type: "string", kind: "uuid" }),
+  p(z.string().nanoid(), { type: "string", kind: "nanoid" }),
   p(z.string().cuid(), { type: "string", kind: "cuid" }),
   p(z.string().cuid2(), { type: "string", kind: "cuid2" }),
   p(z.string().ulid(), { type: "string", kind: "ulid" }),
   p(z.string().ip(), { type: "string", kind: "ip" }),
   p(z.string().datetime(), { type: "string", kind: "datetime" }),
+  p(z.string().datetime({ local: true }), {
+    type: "string",
+    kind: "datetime",
+    local: true,
+  }),
+
+  p(z.string().date(), { type: "string", kind: "date" }),
+  p(z.string().duration(), { type: "string", kind: "duration" }),
+  p(z.string().base64(), { type: "string", kind: "base64" }),
 
   p(z.string().ip({ version: "v4" }), {
     type: "string",
@@ -81,6 +91,16 @@ test.each([
     type: "string",
     kind: "datetime",
     offset: true,
+    precision: 3,
+  }),
+
+  p(z.string().time(), {
+    type: "string",
+    kind: "time",
+  }),
+  p(z.string().time({ precision: 3 }), {
+    type: "string",
+    kind: "time",
     precision: 3,
   }),
 
@@ -217,7 +237,15 @@ test.each([
     properties: { foo: { type: "string" } },
   }),
 
+  p(z.object({}).readonly(), {
+    type: "object",
+    readonly: true,
+    properties: {},
+  }),
+
   p(z.literal("Gregor"), { type: "literal", value: "Gregor" }),
+
+  p(z.symbol(), { type: "symbol" }),
 
   p(z.array(z.number()), {
     type: "array",
@@ -334,7 +362,12 @@ test.each([
 test.each([
   p(z.string(), { type: "string", isOptional: false }),
   p(z.string(), { type: "string", isNullable: false }),
-])("isOptional/isNullable", (schema, shape) => {
+  p(z.object({}), {
+    type: "object",
+    readonly: false,
+    properties: {},
+  }),
+])("isOptional/isNullable/readonly", (schema, shape) => {
   expect(zerialize(dezerialize(shape) as any)).toEqual(zerialize(schema));
 });
 

@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   SzOptional,
   SzNullable,
+  SzReadonly,
   SzDefault,
   SzLiteral,
   SzArray,
@@ -28,6 +29,7 @@ import {
   SzNever,
   SzNull,
   SzUndefined,
+  SzSymbol,
   SzUnknown,
   SzVoid,
 } from "./types";
@@ -68,6 +70,12 @@ export type Dezerialize<T extends SzType> =
         ? z.ZodNullable<I>
         : never
       : never
+    : T extends SzReadonly
+    ? Dezerialize<OmitKey<T, SzReadonly>> extends infer I
+      ? I extends ZodTypes
+        ? z.ZodReadonly<I>
+        : never
+      : never
     : T extends SzDefault<any>
     ? Dezerialize<OmitKey<T, SzDefault<any>>> extends infer I
       ? I extends ZodTypes
@@ -90,6 +98,8 @@ export type Dezerialize<T extends SzType> =
     ? z.ZodUndefined
     : T extends SzNull
     ? z.ZodNull
+    : T extends SzSymbol
+    ? z.ZodSymbol
     : T extends SzAny
     ? z.ZodAny
     : T extends SzUnknown
@@ -183,7 +193,15 @@ const dezerializers = {
       if (shape.kind == "ip") {
         s = s.ip({ version: shape.version });
       } else if (shape.kind == "datetime") {
-        s = s.datetime({ offset: shape.offset, precision: shape.precision });
+        s = s.datetime({
+          offset: shape.offset,
+          precision: shape.precision,
+          local: shape.local,
+        });
+      } else if (shape.kind == "time") {
+        s = s.time({
+          precision: shape.precision,
+        });
       } else {
         s = s[shape.kind]();
       }
@@ -227,6 +245,8 @@ const dezerializers = {
   void: () => z.void(),
 
   literal: (shape) => z.literal(shape.value),
+
+  symbol: () => z.symbol(),
 
   tuple: ((shape: SzTuple, opts: DezerializerOptions) => {
     let i = z.tuple(shape.items.map((item) => dezerialize(item, opts)) as any);
@@ -344,6 +364,12 @@ export function dezerialize(
     const { defaultValue, ...rest } = shape;
     const inner = dezerialize(rest, opts);
     return inner.default(defaultValue);
+  }
+
+  if ("readonly" in shape) {
+    const { readonly, ...rest } = shape;
+    const inner = dezerialize(rest, opts);
+    return readonly ? inner.readonly() : inner;
   }
 
   if ("description" in shape && typeof shape.description === "string") {
