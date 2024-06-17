@@ -346,5 +346,11 @@ export function dezerialize(
     return inner.default(defaultValue);
   }
 
+  if ("description" in shape && typeof shape.description === "string") {
+    const { description, ...rest } = shape;
+    const inner = dezerialize(rest, opts);
+    return inner.describe(description);
+  }
+
   return dezerializers[shape.type](shape as any, opts);
 }
