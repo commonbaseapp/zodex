@@ -831,21 +831,25 @@ test("recursive zerialize and dezerialize", () => {
   // Convert the schema to a shape using zerialize
   const zodSchema = dezerialize(schema);
   const jsonSchema = zerialize(zodSchema);
-  // console.log(shape);
+
+  function removeIds(obj) {
+    if (Array.isArray(obj)) {
+      return obj.map(removeIds);
+    } else if (typeof obj === "object" && obj !== null) {
+      const newObj = {};
+      for (const key of Object.keys(obj)) {
+        if (key !== "id" && key !== "ref") {
+          newObj[key] = removeIds(obj[key]);
+        }
+      }
+      return newObj;
+    } else {
+      return obj;
+    }
+  }
+
+  const cleanedJsonSchema = removeIds(jsonSchema);
+  const cleanedSchema = removeIds(schema);
   // Test that zerialize and dezerialize work correctly
-  // expect(zerialize(shape)).toEqual(schema);
-  // Verify that the default values are correctly deserialized
-  // expect(
-  //   (dezerialize(shape as SzType) as any).parse({
-  //     limit: "10",
-  //     orderBy: [{ id: { isAsc: "true" }, test: { isAsc: "false" } }],
-  //     id: { eq: "123", between: { lower: "10", upper: "20" } },
-  //     and: [{ limit: "5" }],
-  //   })
-  // ).toEqual({
-  //   limit: 10,
-  //   orderBy: [{ id: { isAsc: true }, test: { isAsc: false } }],
-  //   id: { eq: "123", between: { lower: "10", upper: "20" } },
-  //   and: [{ limit: 5 }],
-  // });
+  expect(cleanedJsonSchema).toEqual(cleanedSchema);
 });

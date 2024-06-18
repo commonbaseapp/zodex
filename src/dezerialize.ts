@@ -334,7 +334,7 @@ function dezerializeWithContext(shape, ctx) {
     throw new Error("Invalid shape provided to dezerializeWithContext");
   }
 
-  const shapeId = shape.id || JSON.stringify(shape);
+  const shapeId = shape.id ?? shape.ref;
 
   if (ctx.seenSchemas.has(shapeId)) {
     const existingSchema = ctx.seenSchemas.get(shapeId);
@@ -350,19 +350,7 @@ function dezerializeWithContext(shape, ctx) {
   ctx.pendingSchemas.set(shapeId, shape);
 
   let result;
-  if ("isOptional" in shape) {
-    const { isOptional, ...rest } = shape;
-    const inner = resolveReferences(rest, ctx);
-    result = isOptional ? inner.optional() : inner;
-  } else if ("isNullable" in shape) {
-    const { isNullable, ...rest } = shape;
-    const inner = resolveReferences(rest, ctx);
-    result = isNullable ? inner.nullable() : inner;
-  } else if ("defaultValue" in shape) {
-    const { defaultValue, ...rest } = shape;
-    const inner = resolveReferences(rest, ctx);
-    result = inner.default(defaultValue);
-  } else if (shape.type === "lazy") {
+  if (shape.type === "lazy") {
     if (shape.schema) {
       result = z.lazy(() => resolveReferences(shape.schema, ctx));
     } else if (shape.ref) {
@@ -389,6 +377,19 @@ function dezerializeWithContext(shape, ctx) {
     throw new Error(`Unknown shape type: ${shape.type}`);
   }
 
+  if ("isOptional" in shape) {
+    const { isOptional, ...rest } = shape;
+    result = isOptional ? result.optional() : result;
+  }
+  if ("isNullable" in shape) {
+    const { isNullable, ...rest } = shape;
+    result = isNullable ? result.nullable() : result;
+  }
+  if ("defaultValue" in shape) {
+    const { defaultValue, ...rest } = shape;
+    result = result.default(defaultValue);
+  }
+
   ctx.pendingSchemas.set(shapeId, result);
 
   if (shape.id) {
@@ -402,18 +403,32 @@ function dezerializeWithContext(shape, ctx) {
 
 function resolveReferences(shape, ctx) {
   if (typeof shape === "object" && "ref" in shape) {
-    if (ctx.seenSchemas.has(shape.ref)) {
-      const existingSchema = ctx.seenSchemas.get(shape.ref);
+    if (ctx.seenSchemas.has(shape.ref?.id ?? shape.ref.ref ?? shape.ref)) {
+      const existingSchema = ctx.seenSchemas.get(
+        shape.ref?.id ?? shape.ref.ref ?? shape.ref
+      );
       if (existingSchema) {
         return existingSchema;
       } else {
-        return z.lazy(() => ctx.seenSchemas.get(shape.ref));
+        return z.lazy(() =>
+          ctx.seenSchemas.get(shape.ref?.id ?? shape.ref.ref ?? shape.ref)
+        );
       }
     } else {
-      if (!ctx.pendingSchemas.has(shape.ref)) {
-        ctx.pendingSchemas.set(shape.ref, null); // Placeholder
+      if (
+        !ctx.pendingSchemas.has(shape.ref?.id ?? shape.ref.ref ?? shape.ref)
+      ) {
+        ctx.pendingSchemas.set(
+          shape.ref?.id ?? shape.ref.ref ?? shape.ref,
+          null
+        ); // Placeholder
       }
-      return z.lazy(() => resolveReferences({ type: "ref", ref: shape.ref }, ctx));
+      return z.lazy(() =>
+        resolveReferences(
+          { type: "ref", ref: shape.ref?.id ?? shape.ref.ref ?? shape.ref },
+          ctx
+        )
+      );
     }
   }
   return dezerializeWithContext(shape, ctx);
