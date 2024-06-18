@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { DIRTY, INVALID, OK, z, ZodType, ZodTypeDef } from "zod";
 
 type Modifiers =
   | z.ZodOptional<ZodTypes>
@@ -42,6 +42,7 @@ export type ZodTypes =
   | ListCollections
   | KVCollections
   | ADTs
+  | ZodRef
   | z.ZodFunction<any, ZodTypes>
   | z.ZodLazy<ZodTypes>
   | z.ZodLiteral<any>
@@ -52,3 +53,31 @@ export type ZodTypes =
   | z.ZodPipeline<ZodTypes, ZodTypes>;
 
 export type ZTypeName<T extends ZodTypes> = T["_def"]["typeName"];
+
+interface ZodRefDef extends ZodTypeDef {
+  typeName: "ZodRef";
+  schema: ZodType;
+}
+
+export class ZodRef extends ZodType<unknown, ZodRefDef> {
+  _parse(input: z.ParseInput): z.ParseReturnType<unknown> {
+    const { ctx, status } = this._processInputParams(input);
+    if (status.value === "valid") {
+      return OK(ctx.data);
+    } else if (status.value === "dirty") {
+      return DIRTY(ctx.data);
+    }
+    return INVALID;
+  }
+
+  get schema() {
+    return this._def.schema;
+  }
+
+  static create(schema: ZodType): ZodRef {
+    return new ZodRef({
+      typeName: "ZodRef",
+      schema,
+    });
+  }
+}

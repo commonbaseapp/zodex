@@ -86,4 +86,3 @@ options:
 - lazy, effects and brand are omitted
 - pipeline and catch types are unwrapped
 - native enums are turned into enums
-- recursive schemas not currently supported
