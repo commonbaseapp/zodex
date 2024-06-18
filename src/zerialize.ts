@@ -412,9 +412,12 @@ function zerializeWithContext(
   const schemaId = ctx.nextId++;
   ctx.pendingSchemas.set(schema, schemaId);
 
-  const serialized = zerializers[def.typeName](def as any, ctx);
+  let serialized;
+  serialized = zerializers[def.typeName](def as any, ctx);
+
   ctx.seenSchemas.set(schema, schemaId);
   ctx.pendingSchemas.delete(schema);
 
-  return { ...serialized, id: schemaId };
+  const result = { ...serialized, id: schemaId };
+  return result;
 }

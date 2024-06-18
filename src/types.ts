@@ -1,6 +1,7 @@
 import { ValueOf } from "type-fest";
 
 export type SzNumber = {
+  id: number;
   type: "number";
   coerce?: boolean;
   min?: number;
@@ -12,6 +13,7 @@ export type SzNumber = {
   finite?: boolean;
 };
 export type SzBigInt = {
+  id: number;
   type: "bigInt";
   coerce?: boolean;
   min?: string;
@@ -32,6 +34,7 @@ export const STRING_KINDS = new Set([
 ] as const);
 
 export type SzString = {
+  id: number;
   type: "string";
   coerce?: boolean;
   min?: number;
@@ -61,20 +64,46 @@ export type SzString = {
   );
 
 export type SzDate = {
+  id: number;
   type: "date";
   coerce?: boolean;
   min?: number;
   max?: number;
 };
 
-export type SzBoolean = { type: "boolean"; coerce?: boolean };
-export type SzNaN = { type: "nan" };
-export type SzUndefined = { type: "undefined" };
-export type SzNull = { type: "null" };
-export type SzAny = { type: "any" };
-export type SzUnknown = { type: "unknown" };
-export type SzNever = { type: "never" };
-export type SzVoid = { type: "void" };
+export type SzBoolean = {
+  id: number;
+  type: "boolean";
+  coerce?: boolean;
+};
+export type SzNaN = {
+  id: number;
+  type: "nan";
+};
+export type SzUndefined = {
+  id: number;
+  type: "undefined";
+};
+export type SzNull = {
+  id: number;
+  type: "null";
+};
+export type SzAny = {
+  id: number;
+  type: "any";
+};
+export type SzUnknown = {
+  id: number;
+  type: "unknown";
+};
+export type SzNever = {
+  id: number;
+  type: "never";
+};
+export type SzVoid = {
+  id: number;
+  type: "void";
+};
 
 export type SzPrimitive =
   | SzBoolean
@@ -90,8 +119,13 @@ export type SzPrimitive =
   | SzNever
   | SzVoid;
 
-export type SzLiteral<T> = { type: "literal"; value: T };
+export type SzLiteral<T> = {
+  id: number;
+  type: "literal";
+  value: T;
+};
 export type SzArray<T extends SzType = SzType> = {
+  id: number;
   type: "array";
   element: T;
   minLength?: number;
@@ -100,11 +134,13 @@ export type SzArray<T extends SzType = SzType> = {
 export type SzObject<
   T extends Record<string, SzType> = Record<string, SzType>
 > = {
+  id: number;
   type: "object";
   properties: T;
 };
 
 export type SzUnion<Options extends [SzType, ...SzType[]] = [SzType]> = {
+  id: number;
   type: "union";
   options: Options;
 };
@@ -115,6 +151,7 @@ export type SzDiscriminatedUnion<
   Discriminator extends string = string,
   Options extends SzDiscriminatedUnionOption<Discriminator>[] = []
 > = {
+  id: number;
   type: "discriminatedUnion";
   discriminator: Discriminator;
   options: Options;
@@ -123,6 +160,7 @@ export type SzIntersection<
   Left extends SzType = SzType,
   Right extends SzType = SzType
 > = {
+  id: number;
   type: "intersection";
   left: Left;
   right: Right;
@@ -130,6 +168,7 @@ export type SzIntersection<
 export type SzTuple<
   Items extends [SzType, ...SzType[]] | [] = [SzType, ...SzType[]] | []
 > = {
+  id: number;
   type: "tuple";
   items: Items;
   rest?: SzType;
@@ -138,22 +177,26 @@ export type SzRecord<
   Key extends SzKey = SzKey,
   Value extends SzType = SzType
 > = {
+  id: number;
   type: "record";
   key: Key;
   value: Value;
 };
 export type SzMap<Key extends SzKey, Value extends SzType> = {
+  id: number;
   type: "map";
   key: Key;
   value: Value;
 };
 export type SzSet<T extends SzType = SzType> = {
+  id: number;
   type: "set";
   value: T;
   minSize?: number;
   maxSize?: number;
 };
 export type SzFunction<Args extends SzTuple, Return extends SzType> = {
+  id: number;
   type: "function";
   args: Args;
   returns: Return;
@@ -161,28 +204,41 @@ export type SzFunction<Args extends SzTuple, Return extends SzType> = {
 export type SzEnum<
   Values extends [string, ...string[]] = [string, ...string[]]
 > = {
+  id: number;
   type: "enum";
   values: Values;
 };
 export type SzPromise<T extends SzType = SzType> = {
+  id: number;
   type: "promise";
   value: T;
 };
 export type SzLazy = {
+  id: number;
   type: "lazy";
   schema: SzType;
 };
 
 // Add this section
 export type SzRef = {
+  id: number;
   type: "ref";
   ref: number;
 };
 
 // Modifiers
-export type SzNullable = { isNullable: boolean };
-export type SzOptional = { isOptional: boolean };
-export type SzDefault<T> = { defaultValue: T };
+export type SzNullable = {
+  id: number;
+  isNullable: boolean;
+};
+export type SzOptional = {
+  id: number;
+  isOptional: boolean;
+};
+export type SzDefault<T> = {
+  id: number;
+  defaultValue: T;
+};
 
 // Conjunctions
 export type SzKey = SzString | SzNumber;
