@@ -16,7 +16,7 @@ import {
   SzFunction,
   SzEnum,
   SzPromise,
-} from "./types";
+} from "./types.js";
 
 type PrimitiveTypes = {
   string: string;

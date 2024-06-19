@@ -1,7 +1,7 @@
 import React from "react";
 
-import { SzInfer } from "./infer";
-import { SzType } from "./types";
+import { SzInfer } from "./infer.js";
+import { SzType } from "./types.js";
 
 type ShapeValueProps<Value> = {
   value: Value;

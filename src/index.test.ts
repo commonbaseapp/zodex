@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { z } from "zod";
 
-import { dezerialize, SzType, zerialize, Zerialize } from "./index";
+import { dezerialize, SzType, zerialize, Zerialize } from "./index.js";
 
 const p = <
   Schema extends z.ZodFirstPartySchemaTypes,
