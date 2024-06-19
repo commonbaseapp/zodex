@@ -2,8 +2,16 @@
   "name": "zodex",
   "version": "0.0.0-dev",
   "description": "Type-safe (de)serialization for Zod",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/index.js"
+    },
+    "./dist/schema.zodex.json": "./dist/schema.zodex.json"
+  },
   "keywords": [
     "zod",
     "serialization",
@@ -13,11 +21,12 @@
   "author": "Gregor Weber<mail@dflate.io>",
   "license": "MIT",
   "scripts": {
+    "start": "vite serve demo",
     "prepare": "husky",
     "check-style": "prettier --check src",
     "lint": "eslint --no-warn-ignored .",
     "test": "vitest --coverage --silent=false --reporter=basic",
-    "build": "rm -rf dist && pnpm tsc && cp src/schema.zodex.json dist/schema.zodex.json",
+    "build": "rm -rf dist && pnpm tsc --module esnext --moduleResolution bundler --outDir dist/esm && pnpm tsc && echo '{\"type\": \"commonjs\"}' > dist/package.json && echo '{\"type\": \"module\"}' > dist/esm/package.json && cp src/schema.zodex.json dist/schema.zodex.json",
     "prepublish": "pnpm run build"
   },
   "peerDependencies": {
@@ -40,6 +49,7 @@
     "prettier": "2.8.8",
     "typescript": "5.5.4",
     "typescript-eslint": "8.4.0",
+    "vite": "^5.4.3",
     "vitest": "2.0.5"
   },
   "packageManager": "pnpm@9.9.0",

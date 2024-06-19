@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Zodex Demo</title>
+    <style>
+      textarea { width: 300px; height: 400px; }
+    </style>
+    <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon" />
+    <script type="importmap">
+      {
+        "imports": {
+          "zod": "../node_modules/zod/lib/index.mjs"
+        }
+      }
+    </script>
+    <script type="module" src="index.js"></script>
+  </head>
+  <body>
+    <textarea id="js" placeholder="Put arbitrary JavaScript object here (e.g., `{a: 5}`)">{a: 5}</textarea>
+    <textarea id="zod" placeholder="Put Zod here (e.g., `z.object({a: z.number()})`">z.object({a: z.number()})</textarea>
+    <button id="zerialize">Zerialize</button>
+    <textarea id="zodexJSON" placeholder="Put Zodex JSON here (or zerialize a Zod expression)"></textarea>
+    <button id="dezerialize">Dezerialize and validate</button>
+  </body>
+</html>

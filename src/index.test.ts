@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { z } from "zod";
 import { SzCatch } from "./types";
 
-import { dezerialize, SzType, zerialize, Zerialize } from "./index";
+import { dezerialize, SzType, zerialize, Zerialize } from "./index.js";
 
 const zodexSchemaJSON = JSON.parse(
   fs.readFileSync("./src/schema.zodex.json", "utf-8")

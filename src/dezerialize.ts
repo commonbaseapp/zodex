@@ -35,8 +35,8 @@ import {
   SzUnknown,
   SzVoid,
   SzRef,
-} from "./types";
-import { ZodTypes } from "./zod-types";
+} from "./types.js";
+import { ZodTypes } from "./zod-types.js";
 
 type DezerializerOptions = {
   superRefinements?: {

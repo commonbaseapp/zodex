@@ -5,22 +5,11 @@ import eslintConfigPrettier from "eslint-config-prettier";
 
 export default tseslint.config(
   {
-    ignores: [
-      "src/schema.zodex.json",
-      "dist/",
-      ".idea",
-      "coverage",
-    ],
+    ignores: ["src/schema.zodex.json", "dist/", ".idea", "coverage"],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   eslintConfigPrettier,
-  {
-    files: ['*.cjs'],
-    languageOptions: {
-      globals: globals.node
-    }
-  },
   {
     files: ["demo/**/*.js"],
     languageOptions: {
@@ -40,5 +29,5 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "off",
     },
-  },
+  }
 );
