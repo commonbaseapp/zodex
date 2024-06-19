@@ -2,8 +2,15 @@
   "name": "zodex",
   "version": "0.0.0-dev",
   "description": "Type-safe (de)serialization for Zod",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/index.js"
+    }
+  },
   "keywords": [
     "zod",
     "serialization",
@@ -13,11 +20,12 @@
   "author": "Gregor Weber<mail@dflate.io>",
   "license": "MIT",
   "scripts": {
+    "start": "static",
     "prepare": "husky install",
     "check-style": "prettier --check src",
     "lint": "eslint src/**",
     "test": "vitest --coverage --silent=false",
-    "build": "rm -rf dist && pnpm tsc",
+    "build": "rm -rf dist && pnpm tsc --module esnext --moduleResolution bundler --outDir dist/esm && pnpm tsc && echo '{\"type\": \"commonjs\"}' > dist/package.json && echo '{\"type\": \"module\"}' > dist/esm/package.json",
     "prepublish": "pnpm run build"
   },
   "peerDependencies": {
@@ -31,6 +39,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@brettz9/node-static": "^0.1.1",
     "@commitlint/cli": "19.3.0",
     "@commitlint/config-conventional": "19.2.2",
     "@types/react": "18.3.3",
