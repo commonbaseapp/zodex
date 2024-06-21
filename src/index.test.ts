@@ -336,6 +336,40 @@ test.each([
     right: { type: "number" },
   }),
 
+  p(
+    z
+      .object({
+        a: z.string(),
+      })
+      .strict(),
+    {
+      type: "object",
+      unknownKeys: "strict",
+      properties: {
+        a: {
+          type: "string",
+        },
+      },
+    }
+  ),
+
+  p(
+    z
+      .object({
+        a: z.string(),
+      })
+      .passthrough(),
+    {
+      type: "object",
+      unknownKeys: "passthrough",
+      properties: {
+        a: {
+          type: "string",
+        },
+      },
+    }
+  ),
+
   p(z.function(z.tuple([z.string()]), z.number()), {
     type: "function",
     args: { type: "tuple", items: [{ type: "string" }] },

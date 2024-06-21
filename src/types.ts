@@ -116,6 +116,7 @@ export type SzObject<
 > = {
   type: "object";
   properties: T;
+  unknownKeys?: "strict" | "strip" | "passthrough";
 };
 
 export type SzUnion<Options extends [SzType, ...SzType[]] = [SzType]> = {
