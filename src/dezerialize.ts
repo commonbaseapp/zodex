@@ -183,6 +183,15 @@ const dezerializers = {
     if (shape.endsWith !== undefined) {
       s = s.endsWith(shape.endsWith);
     }
+    if (shape.toLowerCase !== undefined) {
+      s = s.toLowerCase();
+    }
+    if (shape.toUpperCase !== undefined) {
+      s = s.toUpperCase();
+    }
+    if (shape.trim !== undefined) {
+      s = s.trim();
+    }
     if ("includes" in shape) {
       s = s.includes(shape.includes, { position: shape.position });
     }

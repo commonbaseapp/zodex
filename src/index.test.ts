@@ -61,6 +61,10 @@ test.each([
     position: 5,
   }),
 
+  p(z.string().toLowerCase(), { type: "string", toLowerCase: true }),
+  p(z.string().toUpperCase(), { type: "string", toUpperCase: true }),
+  p(z.string().trim(), { type: "string", trim: true }),
+
   p(z.string().email(), { type: "string", kind: "email" }),
   p(z.string().url(), { type: "string", kind: "url" }),
   p(z.string().emoji(), { type: "string", kind: "emoji" }),

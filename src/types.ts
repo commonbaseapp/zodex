@@ -43,6 +43,9 @@ export type SzString = {
   length?: number;
   startsWith?: string;
   endsWith?: string;
+  toLowerCase?: boolean;
+  toUpperCase?: boolean;
+  trim?: boolean;
 } & (
   | object
   | {
