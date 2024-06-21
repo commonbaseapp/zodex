@@ -208,6 +208,12 @@ const zerializers = {
           ? { max: check.value }
           : check.kind == "length"
           ? { length: check.value }
+          : check.kind == "toLowerCase"
+          ? { toLowerCase: true }
+          : check.kind == "toUpperCase"
+          ? { toUpperCase: true }
+          : check.kind == "trim"
+          ? { trim: true }
           : check.kind == "startsWith"
           ? { startsWith: check.value }
           : check.kind == "endsWith"
