@@ -349,15 +349,22 @@ const zerializers = {
     ...(def.maxLength === null ? {} : { maxLength: def.maxLength.value }),
   }),
 
-  ZodObject: (def, opts) => ({
-    type: "object",
-    properties: Object.fromEntries(
-      Object.entries(def.shape()).map(([key, value]) => [
-        key,
-        s(value as ZodTypes, opts),
-      ])
-    ),
-  }),
+  ZodObject: (def, opts) => {
+    return {
+      type: "object",
+      ...(def.unknownKeys === "strip"
+        ? {}
+        : {
+            unknownKeys: def.unknownKeys,
+          }),
+      properties: Object.fromEntries(
+        Object.entries(def.shape()).map(([key, value]) => [
+          key,
+          s(value as ZodTypes, opts),
+        ])
+      ),
+    };
+  },
   ZodRecord: (def, opts) => ({
     type: "record",
     key: s(def.keyType, opts),

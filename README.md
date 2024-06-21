@@ -98,5 +98,6 @@ Properties:
 
 - lazy and brand are omitted
 - pipeline and catch types are unwrapped
+- `instanceof`, `implement` (function), `custom`, `catchall` are not supported
 - native enums are turned into enums
 - recursive schemas not currently supported
