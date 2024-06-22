@@ -115,7 +115,7 @@ export type SzObject<
   T extends Record<string, SzType> = Record<string, SzType>
 > = {
   type: "object";
-  properties: T;
+  properties?: T;
   unknownKeys?: "strict" | "strip" | "passthrough";
 };
 
