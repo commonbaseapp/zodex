@@ -339,7 +339,7 @@ const dezerializers = {
   object: ((shape: SzObject, opts: DezerializerOptions) => {
     let i = z.object(
       Object.fromEntries(
-        Object.entries(shape.properties).map(([key, value]) => {
+        Object.entries(shape.properties ?? {}).map(([key, value]) => {
           return [
             key,
             checkRef(value, opts) ||
