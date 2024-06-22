@@ -203,7 +203,7 @@ export type SzReadonly = { readonly: boolean };
 export type SzRef = { $ref: string };
 
 // Conjunctions
-export type SzKey = SzString | SzNumber;
+export type SzKey = SzString | SzNumber | SzSymbol;
 export type SzDefaultOrNullable = SzDefault<any> | SzNullable;
 
 export type SzType = (
