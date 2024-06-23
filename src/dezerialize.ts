@@ -363,7 +363,9 @@ const dezerializers = {
       }
     >;
 
-    if (shape.unknownKeys === "strict") {
+    if (shape.catchall) {
+      i = i.catchall(d(shape.catchall, opts));
+    } else if (shape.unknownKeys === "strict") {
       i = i.strict();
     } else if (shape.unknownKeys === "passthrough") {
       i = i.passthrough();

@@ -54,6 +54,17 @@ test.each([
       },
     },
   }),
+  p(z.object({ name: z.string() }).catchall(z.number()), {
+    type: "object",
+    properties: {
+      name: {
+        type: "string",
+      },
+    },
+    catchall: {
+      type: "number",
+    },
+  }),
   p(z.number().catch(42), { type: "number" }),
 
   p(z.string(), { type: "string" }),

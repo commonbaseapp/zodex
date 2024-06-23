@@ -395,6 +395,15 @@
                   "$ref": "#/$defs/reference-or-type"
                 }
               },
+              "catchall": {
+                "type": "union",
+                "options": [
+                  {
+                    "$ref": "#/$defs/reference-or-type"
+                  }
+                ],
+                "isOptional": true
+              },
               "unknownKeys": {
                 "type": "enum",
                 "values": ["strict", "strip", "passthrough"],
