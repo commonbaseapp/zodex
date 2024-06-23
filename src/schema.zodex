@@ -407,6 +407,13 @@
                 },
                 "isOptional": true
               },
+              "catchall": {
+                "type": "union",
+                "options": [{
+                  "$ref": "#/$defs/reference-or-type"
+                }],
+                "isOptional": true
+              },
               "unknownKeys": {
                 "type": "enum",
                 "values": ["strict", "strip", "passthrough"],
