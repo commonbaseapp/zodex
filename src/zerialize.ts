@@ -377,6 +377,14 @@ const zerializers = {
 
     return {
       type: "object",
+      ...(def.catchall._def.typeName === "ZodNever"
+        ? {}
+        : {
+            catchall: s(def.catchall, {
+              ...opts,
+              paths: [...opts.paths, "catchall"],
+            }),
+          }),
       ...(def.unknownKeys === "strip"
         ? {}
         : {
