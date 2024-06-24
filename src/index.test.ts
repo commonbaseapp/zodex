@@ -1,8 +1,16 @@
 import fs from "fs";
 import { expect, test } from "vitest";
 import { z } from "zod";
+import React from "react";
 
-import { dezerialize, SzType, zerialize, Zerialize } from "./index.js";
+import {
+  dezerialize,
+  SzType,
+  SzString,
+  zerialize,
+  Zerialize,
+  mapTypesToViews,
+} from "./index.js";
 
 const zodexSchemaJSON = JSON.parse(
   fs.readFileSync("./src/schema.zodex", "utf-8")
@@ -1215,4 +1223,25 @@ test("catch", () => {
   expect(serializedNoCatch).toEqual(expectedShapeNoCatch);
 
   const dezSchemaNoCatches = dezerialize(serialized);
+});
+
+test("React", () => {
+  const shapeControl = mapTypesToViews<SzString>({
+    string: (props) => {
+      return React.createElement("input", {
+        value: props.value,
+      });
+    },
+  });
+  const element = shapeControl({
+    shape: {
+      type: "string",
+    },
+    value: "a string",
+    onChange: () => {
+      console.log("changed");
+    },
+  });
+
+  expect(element.props.shape.type).to.equal("string");
 });
