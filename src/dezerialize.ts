@@ -19,6 +19,7 @@ import {
   SzEnum,
   SzPromise,
   SzEffect,
+  SzCatch,
   SzType,
   SzString,
   SzNumber,
@@ -50,6 +51,7 @@ type DezerializerOptions = {
   preprocesses?: {
     [key: string]: (value: any, ctx: z.RefinementCtx) => unknown;
   };
+  catches?: { [key: string]: any };
   path: string;
   pathToSchema: Map<string, ZodTypes>;
   $refs: [z.ZodLazy<any>, string][];
@@ -145,6 +147,8 @@ export type Dezerialize<T extends SzType | SzRef> = T extends SzRef
   ? z.ZodPromise<Dezerialize<Value>>
   : T extends SzEffect<infer Value>
   ? z.ZodEffects<Dezerialize<Value>>
+  : T extends SzCatch<infer Value>
+  ? z.ZodCatch<Dezerialize<Value>>
   : unknown;
 
 type DezerializersMap = {
@@ -488,6 +492,21 @@ const dezerializers = {
     );
     opts.pathToSchema.set(opts.path, i);
     return i;
+  }) as any,
+  catch: ((shape: SzCatch, opts: DezerializerOptions) => {
+    let base =
+      checkRef(shape.innerType, opts) ||
+      d(shape.innerType, {
+        ...opts,
+        path: opts.path + "/innerType",
+      });
+    if (!opts.catches) {
+      opts.pathToSchema.set(opts.path, base);
+      return base;
+    }
+    // @ts-expect-error TS error?
+    base = base.catch(opts.catches[shape.name]);
+    opts.pathToSchema.set(opts.path, base);
   }) as any,
   effect: ((shape: SzEffect, opts: DezerializerOptions) => {
     let base =

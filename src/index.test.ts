@@ -1185,3 +1185,34 @@ test.skip("Large object with inner $ref", () => {
   const parsed = zodexSchema.safeParse(shape);
   expect(parsed.success).to.be.true;
 });
+
+test("catch", () => {
+  const catches = {
+    "forty-two": 42,
+  };
+  const schema = z.number().catch(catches["forty-two"]);
+
+  const expectedShape = {
+    type: "catch",
+    name: "forty-two",
+    innerType: {
+      type: "number",
+    },
+  };
+
+  const serialized = zerialize(schema as any, { catches });
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized, { catches });
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.be.true;
+
+  const expectedShapeNoCatch = {
+    type: "number",
+  };
+  const serializedNoCatch = zerialize(schema as any, { catches: {} });
+  expect(serializedNoCatch).toEqual(expectedShapeNoCatch);
+
+  const dezSchemaNoCatches = dezerialize(serialized);
+});
