@@ -13,7 +13,7 @@
   "author": "Gregor Weber<mail@dflate.io>",
   "license": "MIT",
   "scripts": {
-    "prepare": "husky install",
+    "prepare": "husky",
     "check-style": "prettier --check src",
     "lint": "eslint src/**",
     "test": "vitest --coverage --silent=false",

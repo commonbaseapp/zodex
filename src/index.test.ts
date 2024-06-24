@@ -1,7 +1,15 @@
 import { expect, test } from "vitest";
 import { z } from "zod";
+import React from "react";
 
-import { dezerialize, SzType, zerialize, Zerialize } from "./index";
+import {
+  dezerialize,
+  SzType,
+  SzString,
+  zerialize,
+  Zerialize,
+  mapTypesToViews,
+} from "./index.js";
 
 const p = <
   Schema extends z.ZodFirstPartySchemaTypes,
@@ -706,4 +714,25 @@ test("describe", () => {
   ) as z.SafeParseSuccess<Date>;
 
   expect(res1.success).to.be.true;
+});
+
+test("React", () => {
+  const shapeControl = mapTypesToViews<SzString>({
+    string: (props) => {
+      return React.createElement("input", {
+        value: props.value,
+      });
+    },
+  });
+  const element = shapeControl({
+    shape: {
+      type: "string",
+    },
+    value: "a string",
+    onChange: () => {
+      console.log("changed");
+    },
+  });
+
+  expect(element.props.shape.type).to.equal("string");
 });
