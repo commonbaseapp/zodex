@@ -93,6 +93,7 @@ Properties:
 - `superRefinements` - Map of name to `.superRefine()` functions
 - `transforms` - Map of name to `.transform()` functions
 - `preprocesses` - Map of name to `z.preprocess()` functions
+- `catches` - Map of name to `.catch()` values
 
 ## Use of JSON References
 
@@ -113,7 +114,7 @@ use another library to first resolve them.
 ## Caveats
 
 - `brand` is not supportable and omitted
-- `lazy`, `pipeline` and `catch` types are unwrapped
+- `lazy` and `pipeline` types are unwrapped
 - native enums are turned into `enum`s
 - Due to technical limitations, we cannot support the regular
   `refine()`, `custom()` and `instanceof` methods (and they will be

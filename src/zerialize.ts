@@ -18,6 +18,7 @@ import {
   SzPromise,
   SzNumber,
   SzEffect,
+  SzCatch,
   SzReadonly,
   SzPrimitive,
   SzType,
@@ -114,6 +115,8 @@ export type Zerialize<T extends ZodTypes> =
       : SzType
     : T extends z.ZodPromise<infer Value>
     ? SzPromise<Zerialize<Value>>
+    : T extends z.ZodCatch<infer T>
+    ? SzCatch<Zerialize<T>>
     : T extends z.ZodEffects<infer T>
     ? SzEffect<Zerialize<T>>
     : // Unserializable types, fallback to serializing inner type
@@ -144,6 +147,7 @@ type ZerializerOptions = {
   preprocesses?: {
     [key: string]: (value: any, ctx: z.RefinementCtx) => unknown;
   };
+  catches?: { [key: string]: any };
   paths: string[];
   pathMap: WeakMap<z.ZodTypeDef, string[]>;
 };
@@ -580,7 +584,27 @@ const zerializers = {
   },
   ZodBranded: (def, opts) => s(def.type, opts),
   ZodPipeline: (def, opts) => s(def.out, opts),
-  ZodCatch: (def, opts) => s(def.innerType, opts),
+  ZodCatch: (def, opts) => {
+    if (!opts.catches) {
+      return s(def.innerType, opts);
+    }
+
+    // @ts-expect-error API wrong?
+    const catchValue = def.catchValue();
+    const ctch = Object.entries(opts.catches).find(([, ctchVal]) => {
+      return ctchVal === catchValue;
+    });
+
+    if (!ctch) {
+      return s(def.innerType, opts);
+    }
+
+    return {
+      type: "catch",
+      name: ctch[0],
+      innerType: s(def.innerType, opts),
+    };
+  },
   ZodReadonly: (def, opts) => ({ ...s(def.innerType, opts), readonly: true }),
 } satisfies ZerializersMap as ZerializersMap;
 
