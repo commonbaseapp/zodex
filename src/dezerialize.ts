@@ -301,23 +301,11 @@ const dezerializers = {
       return base;
     }
     for (const { name, type } of shape.effects) {
-      if (
-        type === "refinement" &&
-        opts.superRefinements &&
-        opts.superRefinements[name]
-      ) {
+      if (type === "refinement" && opts.superRefinements?.[name]) {
         base = base.superRefine(opts.superRefinements[name]);
-      } else if (
-        type === "transform" &&
-        opts.transforms &&
-        opts.transforms[name]
-      ) {
+      } else if (type === "transform" && opts.transforms?.[name]) {
         base = base.transform(opts.transforms[name]);
-      } else if (
-        type === "preprocess" &&
-        opts.preprocesses &&
-        opts.preprocesses[name]
-      ) {
+      } else if (type === "preprocess" && opts.preprocesses?.[name]) {
         base = z.preprocess(opts.preprocesses[name], base);
       }
     }
