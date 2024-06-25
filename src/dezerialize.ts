@@ -34,9 +34,18 @@ import {
 import { ZodTypes } from "./zod-types";
 
 type DezerializerOptions = {
-  superRefinements?: { [key: string]: (value: any, ctx: any) => void };
-  transforms?: { [key: string]: (value: any, ctx: any) => void };
-  preprocesses?: { [key: string]: (value: any, ctx: any) => void };
+  superRefinements?: {
+    [key: string]: (value: any, ctx: z.RefinementCtx) => Promise<void> | void;
+  };
+  transforms?: {
+    [key: string]: (
+      value: any,
+      ctx: z.RefinementCtx
+    ) => Promise<unknown> | unknown;
+  };
+  preprocesses?: {
+    [key: string]: (value: any, ctx: z.RefinementCtx) => unknown;
+  };
 };
 
 type DistributiveOmit<T, K extends keyof any> = T extends any

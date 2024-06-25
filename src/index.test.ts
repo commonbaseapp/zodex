@@ -525,9 +525,11 @@ test("named superrefinements and transforms", () => {
     type: "effect",
   };
 
+  // @ts-expect-error BCE arg is deliberately bad
   const serialized = zerialize(schema, { superRefinements, transforms });
   expect(serialized).toEqual(expectedShape);
 
+  // @ts-expect-error BCE arg is deliberately bad
   const dezSchema = dezerialize(serialized, { superRefinements, transforms });
   const res1 = dezSchema.safeParse(
     new Date(new Date().getTime() + 10000000)
