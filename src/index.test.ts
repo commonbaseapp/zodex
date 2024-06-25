@@ -616,3 +616,23 @@ test("dezerialize effects without options", () => {
 
   expect(res1.success).to.be.true;
 });
+
+test("describe", () => {
+  const schema = z.date().describe("Some description");
+
+  const expectedShape = {
+    type: "date",
+    description: "Some description",
+  };
+
+  const serialized = zerialize(schema);
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized);
+
+  const res1 = dezSchema.safeParse(
+    new Date(new Date().getTime() + 10000000)
+  ) as z.SafeParseSuccess<Date>;
+
+  expect(res1.success).to.be.true;
+});

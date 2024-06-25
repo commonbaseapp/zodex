@@ -460,5 +460,11 @@ export function zerialize<T extends ZodTypes>(
 ): Zerialize<T> {
   // export function zerialize(schema: ZodTypes, opts?: ZerializerOptions): unknown {
   const { _def: def } = schema;
-  return zerializers[def.typeName](def as any, opts);
+  const zer = zerializers[def.typeName](def as any, opts);
+
+  if (typeof def.description === "string") {
+    zer.description = def.description;
+  }
+
+  return zer;
 }

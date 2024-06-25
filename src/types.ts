@@ -182,6 +182,7 @@ export type SzEffect<T extends SzType = SzType> = {
 export type SzNullable = { isNullable: boolean };
 export type SzOptional = { isOptional: boolean };
 export type SzDefault<T> = { defaultValue: T };
+export type SzDescription = { description: string };
 
 // Conjunctions
 export type SzKey = SzString | SzNumber;
@@ -204,7 +205,7 @@ export type SzType = (
   | SzPromise<any>
   | SzEffect<any>
 ) &
-  Partial<SzNullable & SzOptional & SzDefault<any>>;
+  Partial<SzNullable & SzOptional & SzDefault<any> & SzDescription>;
 
 export type SzUnionize<T extends SzType> =
   | T
