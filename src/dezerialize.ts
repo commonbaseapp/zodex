@@ -16,6 +16,7 @@ import {
   SzFunction,
   SzEnum,
   SzPromise,
+  SzEffect,
   SzType,
   SzString,
   SzNumber,
@@ -31,6 +32,21 @@ import {
   SzVoid,
 } from "./types";
 import { ZodTypes } from "./zod-types";
+
+type DezerializerOptions = {
+  superRefinements?: {
+    [key: string]: (value: any, ctx: z.RefinementCtx) => Promise<void> | void;
+  };
+  transforms?: {
+    [key: string]: (
+      value: any,
+      ctx: z.RefinementCtx
+    ) => Promise<unknown> | unknown;
+  };
+  preprocesses?: {
+    [key: string]: (value: any, ctx: z.RefinementCtx) => unknown;
+  };
+};
 
 type DistributiveOmit<T, K extends keyof any> = T extends any
   ? Omit<T, K>
@@ -110,10 +126,15 @@ export type Dezerialize<T extends SzType> =
     ? z.ZodFunction<Dezerialize<Args>, Dezerialize<Return>>
     : T extends SzPromise<infer Value>
     ? z.ZodPromise<Dezerialize<Value>>
+    : T extends SzEffect<infer Value>
+    ? z.ZodEffects<Dezerialize<Value>>
     : unknown;
 
 type DezerializersMap = {
-  [T in SzType["type"]]: (shape: Extract<SzType, { type: T }>) => ZodTypes; //Dezerialize<Extract<SzType, { type: T }>>;
+  [T in SzType["type"]]: (
+    shape: Extract<SzType, { type: T }>,
+    opts: DezerializerOptions
+  ) => ZodTypes; //Dezerialize<Extract<SzType, { type: T }>>;
 };
 const dezerializers = {
   number: (shape) => {
@@ -207,15 +228,15 @@ const dezerializers = {
 
   literal: (shape) => z.literal(shape.value),
 
-  tuple: ((shape: SzTuple) => {
-    let i = z.tuple(shape.items.map(dezerialize) as any);
+  tuple: ((shape: SzTuple, opts: DezerializerOptions) => {
+    let i = z.tuple(shape.items.map((item) => dezerialize(item, opts)) as any);
     if (shape.rest) {
-      i = i.rest(dezerialize(shape.rest) as any);
+      i = i.rest(dezerialize(shape.rest, opts) as any);
     }
     return i;
   }) as any,
-  set: ((shape: SzSet) => {
-    let i = z.set(dezerialize(shape.value));
+  set: ((shape: SzSet, opts: DezerializerOptions) => {
+    let i = z.set(dezerialize(shape.value, opts));
     if (shape.minSize !== undefined) {
       i = i.min(shape.minSize);
     }
@@ -224,8 +245,8 @@ const dezerializers = {
     }
     return i;
   }) as any,
-  array: ((shape: SzArray) => {
-    let i = z.array(dezerialize(shape.element));
+  array: ((shape: SzArray, opts: DezerializerOptions) => {
+    let i = z.array(dezerialize(shape.element, opts));
     if (shape.minLength !== undefined) {
       i = i.min(shape.minLength);
     }
@@ -235,60 +256,95 @@ const dezerializers = {
     return i;
   }) as any,
 
-  object: ((shape: SzObject) =>
+  object: ((shape: SzObject, opts: DezerializerOptions) =>
     z.object(
       Object.fromEntries(
         Object.entries(shape.properties).map(([key, value]) => [
           key,
-          dezerialize(value),
+          dezerialize(value as any, opts),
         ])
       )
     )) as any,
-  record: ((shape: SzRecord) =>
-    z.record(dezerialize(shape.key), dezerialize(shape.value))) as any,
-  map: ((shape: SzMap<any, any>) =>
-    z.map(dezerialize(shape.key), dezerialize(shape.value))) as any,
+  record: ((shape: SzRecord, opts: DezerializerOptions) =>
+    z.record(
+      dezerialize(shape.key, opts),
+      dezerialize(shape.value, opts)
+    )) as any,
+  map: ((shape: SzMap<any, any>, opts: DezerializerOptions) =>
+    z.map(dezerialize(shape.key, opts), dezerialize(shape.value, opts))) as any,
 
   enum: ((shape: SzEnum) => z.enum(shape.values)) as any,
 
-  union: ((shape: SzUnion) =>
-    z.union(shape.options.map(dezerialize) as any)) as any,
-  discriminatedUnion: ((shape: SzDiscriminatedUnion) =>
+  union: ((shape: SzUnion, opts: DezerializerOptions) =>
+    z.union(shape.options.map((opt) => dezerialize(opt, opts)) as any)) as any,
+  discriminatedUnion: ((
+    shape: SzDiscriminatedUnion,
+    opts: DezerializerOptions
+  ) =>
     z.discriminatedUnion(
       shape.discriminator,
-      shape.options.map(dezerialize) as any
+      shape.options.map((opt) => dezerialize(opt, opts)) as any
     )) as any,
-  intersection: ((shape: SzIntersection) =>
-    z.intersection(dezerialize(shape.left), dezerialize(shape.right))) as any,
+  intersection: ((shape: SzIntersection, opts: DezerializerOptions) =>
+    z.intersection(
+      dezerialize(shape.left, opts),
+      dezerialize(shape.right, opts)
+    )) as any,
 
-  function: ((shape: SzFunction<any, any>) =>
+  function: ((shape: SzFunction<any, any>, opts: DezerializerOptions) =>
     z.function(
-      dezerialize(shape.args) as any,
-      dezerialize(shape.returns)
+      dezerialize(shape.args, opts) as any,
+      dezerialize(shape.returns, opts)
     )) as any,
-  promise: ((shape: SzPromise) => z.promise(dezerialize(shape.value))) as any,
+  promise: ((shape: SzPromise, opts: DezerializerOptions) =>
+    z.promise(dezerialize(shape.value, opts))) as any,
+  effect: ((shape: SzEffect, opts: DezerializerOptions) => {
+    let base = dezerialize(shape.inner, opts);
+    if (
+      !(
+        "superRefinements" in opts ||
+        "transforms" in opts ||
+        "preprocesses" in opts
+      )
+    ) {
+      return base;
+    }
+    for (const { name, type } of shape.effects) {
+      if (type === "refinement" && opts.superRefinements?.[name]) {
+        base = base.superRefine(opts.superRefinements[name]);
+      } else if (type === "transform" && opts.transforms?.[name]) {
+        base = base.transform(opts.transforms[name]);
+      } else if (type === "preprocess" && opts.preprocesses?.[name]) {
+        base = z.preprocess(opts.preprocesses[name], base);
+      }
+    }
+    return base;
+  }) as any,
 } satisfies DezerializersMap as DezerializersMap;
 
 // Must match the exported Dezerialize types
 // export function dezerialize<T extends SzType>(_shape: T): Dezerialize<T>;
-export function dezerialize(shape: SzType): ZodTypes {
+export function dezerialize(
+  shape: SzType,
+  opts: DezerializerOptions = {}
+): ZodTypes {
   if ("isOptional" in shape) {
     const { isOptional, ...rest } = shape;
-    const inner = dezerialize(rest);
+    const inner = dezerialize(rest, opts);
     return isOptional ? inner.optional() : inner;
   }
 
   if ("isNullable" in shape) {
     const { isNullable, ...rest } = shape;
-    const inner = dezerialize(rest);
+    const inner = dezerialize(rest, opts);
     return isNullable ? inner.nullable() : inner;
   }
 
   if ("defaultValue" in shape) {
     const { defaultValue, ...rest } = shape;
-    const inner = dezerialize(rest);
+    const inner = dezerialize(rest, opts);
     return inner.default(defaultValue);
   }
 
-  return dezerializers[shape.type](shape as any);
+  return dezerializers[shape.type](shape as any, opts);
 }

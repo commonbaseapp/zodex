@@ -461,3 +461,158 @@ test("coerce (boolean)", () => {
   });
   expect(dezerialize(shape as SzType).parse(0)).toEqual(false);
 });
+
+test("named superrefinements and transforms", () => {
+  const superRefinements = {
+    "not in future": (d: Date, ctx: z.RefinementCtx) => {
+      if (d > new Date()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.too_big,
+          maximum: new Date().getTime(),
+          message: "Not into the future",
+          inclusive: false,
+          type: "date",
+        });
+      }
+    },
+    "far too old": (val: Date, ctx: z.RefinementCtx) => {
+      if (val < new Date("1970-01-01")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.too_small,
+          minimum: new Date("1970-01-01").getTime(),
+          message: "Too old",
+          inclusive: false,
+          type: "date",
+        });
+      }
+    },
+    "far too young": (val: Date, ctx: z.RefinementCtx) => {
+      if (val > new Date("2030-01-01")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.too_big,
+          maximum: new Date("2030-01-01").getTime(),
+          message: "Too young",
+          inclusive: false,
+          type: "date",
+        });
+      }
+    },
+    BCE: (arg: Date) => arg < new Date("0001-01-01"),
+  };
+
+  const transforms = {
+    earlier: (val) => new Date(new Date().getTime() - 60000),
+  };
+
+  const schema = z
+    .date()
+    .superRefine(superRefinements["not in future"])
+    .refine(superRefinements["BCE"]) // Ignored by serialization
+    .superRefine(superRefinements["far too old"])
+    .transform(transforms.earlier)
+    .superRefine(superRefinements["far too young"]);
+
+  const expectedShape = {
+    effects: [
+      { type: "refinement", name: "not in future" },
+      { type: "refinement", name: "far too old" },
+      { type: "transform", name: "earlier" },
+      { type: "refinement", name: "far too young" },
+    ],
+    inner: {
+      type: "date",
+    },
+    type: "effect",
+  };
+
+  // @ts-expect-error BCE arg is deliberately bad
+  const serialized = zerialize(schema, { superRefinements, transforms });
+  expect(serialized).toEqual(expectedShape);
+
+  // @ts-expect-error BCE arg is deliberately bad
+  const dezSchema = dezerialize(serialized, { superRefinements, transforms });
+  const res1 = dezSchema.safeParse(
+    new Date(new Date().getTime() + 10000000)
+  ) as z.SafeParseError<Date>;
+
+  expect(res1.success).to.be.false;
+
+  const res2 = dezSchema.safeParse(
+    new Date("1969-01-01")
+  ) as z.SafeParseError<Date>;
+
+  expect(res2.success).to.be.false;
+
+  const res3 = dezSchema.safeParse(
+    new Date("2050-01-01")
+  ) as z.SafeParseError<Date>;
+
+  expect(res3.success).to.be.false;
+
+  const res4 = dezSchema.safeParse(new Date()) as z.SafeParseSuccess<Date>;
+
+  expect(res4.success).to.be.true;
+  // Will be transformed down
+  expect(res4.data.getTime()).toBeLessThan(new Date().getTime());
+});
+
+test("preprocess", () => {
+  const preprocesses = {
+    higher: (val: unknown) => (val as number) + 1000,
+  };
+
+  const schema = z.preprocess(preprocesses.higher, z.number());
+
+  const expectedShape = {
+    effects: [{ type: "preprocess", name: "higher" }],
+    inner: {
+      type: "number",
+    },
+    type: "effect",
+  };
+
+  const serialized = zerialize(schema, { preprocesses });
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized, { preprocesses });
+  const res1 = dezSchema.safeParse(500) as z.SafeParseSuccess<Date>;
+
+  expect(res1.success).to.be.true;
+  expect(res1.data).to.be.equal(1500);
+});
+
+test("dezerialize effects without options", () => {
+  const superRefinements = {
+    "not in future": (d: Date, ctx: z.RefinementCtx) => {
+      if (d > new Date()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.too_big,
+          maximum: new Date().getTime(),
+          message: "Not into the future",
+          inclusive: false,
+          type: "date",
+        });
+      }
+    },
+  };
+  const schema = z.date().superRefine(superRefinements["not in future"]);
+
+  const expectedShape = {
+    effects: [{ type: "refinement", name: "not in future" }],
+    inner: {
+      type: "date",
+    },
+    type: "effect",
+  };
+
+  const serialized = zerialize(schema, { superRefinements });
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized);
+
+  const res1 = dezSchema.safeParse(
+    new Date(new Date().getTime() + 10000000)
+  ) as z.SafeParseSuccess<Date>;
+
+  expect(res1.success).to.be.true;
+});

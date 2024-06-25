@@ -77,13 +77,26 @@ options:
         value: "b"
 ```
 
+## Options
+
+Both `zerialize` and `dezerialize` accept an options object with the same properties.
+
+Since Zod does not allow the specification of the names of effects (refinements, transforms, and preprocesses), we allow you to supply as options maps of names to effects so that these can be part of serialization and deserialization. Note that due to technical limitations, we cannot support the regular `refine()` method (and it will be ignored) but `superRefine()` is supported. If none of these options are supplied,
+the effects will be omitted.
+
+Properties:
+
+- `superRefinements` - Map of name to `.superRefine()` functions
+- `transforms` - Map of name to `.transform()` functions
+- `preprocesses` - Map of name to `z.preprocess()` functions
+
 ## Roadmap
 
 - custom error messages are not included
 
 ## Caveats
 
-- lazy, effects and brand are omitted
+- lazy and brand are omitted
 - pipeline and catch types are unwrapped
 - native enums are turned into enums
 - recursive schemas not currently supported
