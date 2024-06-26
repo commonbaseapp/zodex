@@ -18,6 +18,7 @@ import {
   SzPromise,
   SzNumber,
   SzEffect,
+  SzReadonly,
   SzPrimitive,
   SzType,
   STRING_KINDS,
@@ -37,10 +38,9 @@ export const PRIMITIVES = {
   ZodUnknown: "unknown",
   ZodNever: "never",
   ZodVoid: "void",
+  ZodSymbol: "symbol",
 } as const satisfies Readonly<
-  Partial<
-    Record<Exclude<z.ZodFirstPartyTypeKind, "ZodSymbol">, SzPrimitive["type"]>
-  >
+  Partial<Record<z.ZodFirstPartyTypeKind, SzPrimitive["type"]>>
 >;
 export type PrimitiveMap = typeof PRIMITIVES;
 
@@ -56,10 +56,10 @@ export type Zerialize<T extends ZodTypes> =
     ? Zerialize<I> & SzNullable
     : T extends z.ZodDefault<infer I>
     ? Zerialize<I> & SzDefault<I["_type"]>
+    : T extends z.ZodReadonly<infer I>
+    ? Zerialize<I> & SzReadonly
     : // Primitives
-    T extends z.ZodNumber
-    ? SzNumber
-    : T extends IsZodPrimitive<T>
+    T extends IsZodPrimitive<T>
     ? { type: PrimitiveMap[ZTypeName<T>] }
     : //
     T extends z.ZodLiteral<infer T>
@@ -220,10 +220,20 @@ const zerializers = {
             }
           : check.kind == "ip"
           ? { kind: "ip", version: check.version }
+          : check.kind == "time"
+          ? {
+              kind: "time",
+              ...(typeof check.precision === "number"
+                ? { precision: check.precision }
+                : {}),
+            }
           : check.kind == "datetime"
           ? {
               kind: "datetime",
               ...(check.offset ? { offset: check.offset } : {}),
+              ...("local" in check && check.local
+                ? { local: check.local }
+                : {}),
               ...(typeof check.precision === "number"
                 ? { precision: check.precision }
                 : {}),
@@ -245,6 +255,7 @@ const zerializers = {
   ZodBoolean: (def) =>
     Object.assign({ type: "boolean" }, def.coerce ? { coerce: true } : {}),
   ZodNaN: () => ({ type: "nan" }),
+  ZodSymbol: (def) => ({ type: "symbol" }),
   ZodBigInt: (def) => {
     const checks = def.checks.reduce(
       (o, check) => ({
@@ -451,6 +462,7 @@ const zerializers = {
   ZodBranded: (def, opts) => s(def.type, opts),
   ZodPipeline: (def, opts) => s(def.out, opts),
   ZodCatch: (def, opts) => s(def.innerType, opts),
+  ZodReadonly: (def, opts) => ({ ...s(def.innerType, opts), readonly: true }),
 } satisfies ZerializersMap as ZerializersMap;
 
 // Must match the exported Zerialize types

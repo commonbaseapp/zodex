@@ -26,9 +26,13 @@ export const STRING_KINDS = new Set([
   "url",
   "emoji",
   "uuid",
+  "nanoid",
   "cuid",
   "cuid2",
   "ulid",
+  "date",
+  "duration",
+  "base64",
 ] as const);
 
 export type SzString = {
@@ -51,8 +55,13 @@ export type SzString = {
     | { kind: "ip"; version?: "v4" | "v6" }
     | { regex: string; flags?: string }
     | {
+        kind: "time";
+        precision?: number;
+      }
+    | {
         kind: "datetime";
         offset?: true;
+        local?: true;
         precision?: number;
       }
     | {
@@ -75,6 +84,7 @@ export type SzAny = { type: "any" };
 export type SzUnknown = { type: "unknown" };
 export type SzNever = { type: "never" };
 export type SzVoid = { type: "void" };
+export type SzSymbol = { type: "symbol" };
 
 export type SzPrimitive =
   | SzBoolean
@@ -88,7 +98,8 @@ export type SzPrimitive =
   | SzAny
   | SzUnknown
   | SzNever
-  | SzVoid;
+  | SzVoid
+  | SzSymbol;
 
 export type SzLiteral<T> = { type: "literal"; value: T };
 export type SzArray<T extends SzType = SzType> = {
@@ -183,6 +194,7 @@ export type SzNullable = { isNullable: boolean };
 export type SzOptional = { isOptional: boolean };
 export type SzDefault<T> = { defaultValue: T };
 export type SzDescription = { description: string };
+export type SzReadonly = { readonly: boolean };
 
 // Conjunctions
 export type SzKey = SzString | SzNumber;
@@ -205,7 +217,9 @@ export type SzType = (
   | SzPromise<any>
   | SzEffect<any>
 ) &
-  Partial<SzNullable & SzOptional & SzDefault<any> & SzDescription>;
+  Partial<
+    SzNullable & SzOptional & SzDefault<any> & SzDescription & SzReadonly
+  >;
 
 export type SzUnionize<T extends SzType> =
   | T

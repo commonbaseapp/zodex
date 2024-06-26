@@ -3,7 +3,8 @@ import { z } from "zod";
 type Modifiers =
   | z.ZodOptional<ZodTypes>
   | z.ZodNullable<ZodTypes>
-  | z.ZodDefault<ZodTypes>;
+  | z.ZodDefault<ZodTypes>
+  | z.ZodReadonly<ZodTypes>;
 
 type Primitives =
   | z.ZodString
@@ -17,7 +18,8 @@ type Primitives =
   | z.ZodAny
   | z.ZodUnknown
   | z.ZodNever
-  | z.ZodVoid;
+  | z.ZodVoid
+  | z.ZodSymbol;
 
 type ListCollections =
   | z.ZodTuple<any, any>
