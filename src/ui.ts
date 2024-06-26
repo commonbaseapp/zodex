@@ -17,7 +17,7 @@ type MappedShapeControl<T extends SzType> = {
 };
 
 export function mapTypesToViews<T extends SzType>(
-  controls: MappedShapeControl<T>
+  controls: MappedShapeControl<T>,
 ) {
   return function ShapeControl<I = SzInfer<T>>({
     shape,
