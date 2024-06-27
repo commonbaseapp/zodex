@@ -343,7 +343,7 @@ const dezerializers = {
 } satisfies DezerializersMap as DezerializersMap;
 
 // Must match the exported Dezerialize types
-// export function dezerialize<T extends SzType>(_shape: T): Dezerialize<T>;
+// export function dezerialize<T extends SzType>(shape: T, opts?: DezerializerOptions): Dezerialize<T> {
 export function dezerialize(
   shape: SzType,
   opts: DezerializerOptions = {}
