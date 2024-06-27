@@ -9,5 +9,5 @@
     "declaration": true,
     "outDir": "dist"
   },
-  "exclude": ["dist", "node_modules", "**/*.test.ts"]
+  "exclude": ["vite.config.mts", "dist", "node_modules", "**/*.test.ts"]
 }
