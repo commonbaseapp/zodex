@@ -16,7 +16,7 @@
     "prepare": "husky install",
     "check-style": "prettier --check src",
     "lint": "eslint src/**",
-    "test": "vitest --coverage --silent=false",
+    "test": "vitest --coverage --silent=false --reporter=basic",
     "build": "rm -rf dist && pnpm tsc",
     "prepublish": "pnpm run build"
   },
@@ -26,6 +26,7 @@
     "zod": "^3.x"
   },
   "dependencies": {
+    "jsonref": "^9.0.0",
     "react": "^18.3.1",
     "type-fest": "^4.20.1",
     "zod": "^3.23.8"

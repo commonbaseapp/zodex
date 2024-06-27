@@ -1,3 +1,4 @@
+import { pointer } from "jsonref";
 import { z } from "zod";
 import {
   SzOptional,
@@ -32,6 +33,7 @@ import {
   SzSymbol,
   SzUnknown,
   SzVoid,
+  SzRef,
 } from "./types";
 import { ZodTypes } from "./zod-types";
 
@@ -48,6 +50,10 @@ type DezerializerOptions = {
   preprocesses?: {
     [key: string]: (value: any, ctx: z.RefinementCtx) => unknown;
   };
+  path: string;
+  pathToSchema: Map<string, ZodTypes>;
+  $refs: [z.ZodLazy<any>, string][];
+  originalShape: SzType;
 };
 
 type DistributiveOmit<T, K extends keyof any> = T extends any
@@ -56,89 +62,90 @@ type DistributiveOmit<T, K extends keyof any> = T extends any
 type OmitKey<T, K> = DistributiveOmit<T, keyof K>;
 
 // Types must match the exported dezerialize function's implementation
-export type Dezerialize<T extends SzType> =
-  // Modifier types
+export type Dezerialize<T extends SzType | SzRef> = T extends SzRef
+  ? any
+  : // Modifier types
   T extends SzOptional
-    ? Dezerialize<OmitKey<T, SzOptional>> extends infer I
-      ? I extends ZodTypes
-        ? z.ZodOptional<I>
-        : never
+  ? Dezerialize<OmitKey<T, SzOptional>> extends infer I
+    ? I extends ZodTypes
+      ? z.ZodOptional<I>
       : never
-    : T extends SzNullable
-    ? Dezerialize<OmitKey<T, SzNullable>> extends infer I
-      ? I extends ZodTypes
-        ? z.ZodNullable<I>
-        : never
+    : never
+  : T extends SzNullable
+  ? Dezerialize<OmitKey<T, SzNullable>> extends infer I
+    ? I extends ZodTypes
+      ? z.ZodNullable<I>
       : never
-    : T extends SzReadonly
-    ? Dezerialize<OmitKey<T, SzReadonly>> extends infer I
-      ? I extends ZodTypes
-        ? z.ZodReadonly<I>
-        : never
+    : never
+  : T extends SzReadonly
+  ? Dezerialize<OmitKey<T, SzReadonly>> extends infer I
+    ? I extends ZodTypes
+      ? z.ZodReadonly<I>
       : never
-    : T extends SzDefault<any>
-    ? Dezerialize<OmitKey<T, SzDefault<any>>> extends infer I
-      ? I extends ZodTypes
-        ? z.ZodDefault<I>
-        : never
-      : never // Primitives
-    : T extends SzString
-    ? z.ZodString
-    : T extends SzNumber
-    ? z.ZodNumber
-    : T extends SzBoolean
-    ? z.ZodBoolean
-    : T extends SzBigInt
-    ? z.ZodBigInt
-    : T extends SzNaN
-    ? z.ZodNaN
-    : T extends SzDate
-    ? z.ZodDate
-    : T extends SzUndefined
-    ? z.ZodUndefined
-    : T extends SzNull
-    ? z.ZodNull
-    : T extends SzSymbol
-    ? z.ZodSymbol
-    : T extends SzAny
-    ? z.ZodAny
-    : T extends SzUnknown
-    ? z.ZodUnknown
-    : T extends SzNever
-    ? z.ZodNever
-    : T extends SzVoid
-    ? z.ZodVoid
-    : T extends SzLiteral<infer Value>
-    ? z.ZodLiteral<Value> // List Collections
-    : T extends SzTuple<infer _Items>
-    ? z.ZodTuple<any> //DezerializeArray<Items>>
-    : T extends SzSet<infer Value>
-    ? z.ZodSet<Dezerialize<Value>>
-    : T extends SzArray<infer Element>
-    ? z.ZodArray<Dezerialize<Element>> // Key/Value Collections
-    : T extends SzObject<infer Properties>
-    ? z.ZodObject<{
-        [Property in keyof Properties]: Dezerialize<Properties[Property]>;
-      }>
-    : T extends SzRecord<infer Key, infer Value>
-    ? z.ZodRecord<Dezerialize<Key>, Dezerialize<Value>>
-    : T extends SzMap<infer Key, infer Value>
-    ? z.ZodMap<Dezerialize<Key>, Dezerialize<Value>> // Enum
-    : T extends SzEnum<infer Values>
-    ? z.ZodEnum<Values> // Union/Intersection
-    : T extends SzUnion<infer _Options>
-    ? z.ZodUnion<any>
-    : T extends SzDiscriminatedUnion<infer Discriminator, infer _Options>
-    ? z.ZodDiscriminatedUnion<Discriminator, any>
-    : T extends SzIntersection<infer L, infer R>
-    ? z.ZodIntersection<Dezerialize<L>, Dezerialize<R>> // Specials
-    : T extends SzFunction<infer Args, infer Return>
-    ? z.ZodFunction<Dezerialize<Args>, Dezerialize<Return>>
-    : T extends SzPromise<infer Value>
-    ? z.ZodPromise<Dezerialize<Value>>
-    : T extends SzEffect<infer Value>
-    ? z.ZodEffects<Dezerialize<Value>>
-    : unknown;
+    : never
+  : T extends SzDefault<any>
+  ? Dezerialize<OmitKey<T, SzDefault<any>>> extends infer I
+    ? I extends ZodTypes
+      ? z.ZodDefault<I>
+      : never
+    : never // Primitives
+  : T extends SzString
+  ? z.ZodString
+  : T extends SzNumber
+  ? z.ZodNumber
+  : T extends SzBoolean
+  ? z.ZodBoolean
+  : T extends SzBigInt
+  ? z.ZodBigInt
+  : T extends SzNaN
+  ? z.ZodNaN
+  : T extends SzDate
+  ? z.ZodDate
+  : T extends SzUndefined
+  ? z.ZodUndefined
+  : T extends SzNull
+  ? z.ZodNull
+  : T extends SzSymbol
+  ? z.ZodSymbol
+  : T extends SzAny
+  ? z.ZodAny
+  : T extends SzUnknown
+  ? z.ZodUnknown
+  : T extends SzNever
+  ? z.ZodNever
+  : T extends SzVoid
+  ? z.ZodVoid
+  : T extends SzLiteral<infer Value>
+  ? z.ZodLiteral<Value> // List Collections
+  : T extends SzTuple<infer _Items>
+  ? z.ZodTuple<any> //DezerializeArray<Items>>
+  : T extends SzSet<infer Value>
+  ? z.ZodSet<Dezerialize<Value>>
+  : T extends SzArray<infer Element>
+  ? z.ZodArray<Dezerialize<Element>> // Key/Value Collections
+  : T extends SzObject<infer Properties>
+  ? z.ZodObject<{
+      [Property in keyof Properties]: Dezerialize<Properties[Property]>;
+    }>
+  : T extends SzRecord<infer Key, infer Value>
+  ? z.ZodRecord<Dezerialize<Key>, Dezerialize<Value>>
+  : T extends SzMap<infer Key, infer Value>
+  ? z.ZodMap<Dezerialize<Key>, Dezerialize<Value>> // Enum
+  : T extends SzEnum<infer Values>
+  ? z.ZodEnum<Values> // Union/Intersection
+  : T extends SzUnion<infer _Options>
+  ? z.ZodUnion<any>
+  : T extends SzDiscriminatedUnion<infer Discriminator, infer _Options>
+  ? z.ZodDiscriminatedUnion<Discriminator, any>
+  : T extends SzIntersection<infer L, infer R>
+  ? z.ZodIntersection<Dezerialize<L>, Dezerialize<R>> // Specials
+  : T extends SzFunction<infer Args, infer Return>
+  ? z.ZodFunction<Dezerialize<Args>, Dezerialize<Return>>
+  : T extends SzPromise<infer Value>
+  ? z.ZodPromise<Dezerialize<Value>>
+  : T extends SzEffect<infer Value>
+  ? z.ZodEffects<Dezerialize<Value>>
+  : unknown;
 
 type DezerializersMap = {
   [T in SzType["type"]]: (
@@ -146,6 +153,18 @@ type DezerializersMap = {
     opts: DezerializerOptions
   ) => ZodTypes; //Dezerialize<Extract<SzType, { type: T }>>;
 };
+
+function checkRef(item: SzType, opts: DezerializerOptions) {
+  if ("$ref" in item) {
+    const lazy = z.lazy(() => z.null());
+    opts.$refs.push([lazy, item.$ref as string]);
+    return lazy;
+  }
+  return false;
+}
+
+const d = dezerializeRefs;
+
 const dezerializers = {
   number: (shape) => {
     let n = shape.coerce ? z.coerce.number() : z.number();
@@ -258,40 +277,78 @@ const dezerializers = {
   symbol: () => z.symbol(),
 
   tuple: ((shape: SzTuple, opts: DezerializerOptions) => {
-    let i = z.tuple(shape.items.map((item) => dezerialize(item, opts)) as any);
+    let i = z.tuple(
+      shape.items.map((item, idx) => {
+        return (
+          checkRef(item, opts) ||
+          d(item, {
+            ...opts,
+            path: opts.path + "/items/" + idx,
+          })
+        );
+      }) as any
+    );
+
     if (shape.rest) {
-      i = i.rest(dezerialize(shape.rest, opts) as any);
+      const rest =
+        checkRef(shape.rest, opts) ||
+        (d(shape.rest, {
+          ...opts,
+          path: opts.path + "/rest",
+        }) as any);
+      i = i.rest(rest);
     }
+    opts.pathToSchema.set(opts.path, i);
     return i;
   }) as any,
   set: ((shape: SzSet, opts: DezerializerOptions) => {
-    let i = z.set(dezerialize(shape.value, opts));
+    let i = z.set(
+      checkRef(shape.value, opts) ||
+        d(shape.value, {
+          ...opts,
+          path: opts.path + "/value",
+        })
+    );
     if (shape.minSize !== undefined) {
       i = i.min(shape.minSize);
     }
     if (shape.maxSize !== undefined) {
       i = i.max(shape.maxSize);
     }
+    opts.pathToSchema.set(opts.path, i);
     return i;
   }) as any,
   array: ((shape: SzArray, opts: DezerializerOptions) => {
-    let i = z.array(dezerialize(shape.element, opts));
+    let i = z.array(
+      checkRef(shape.element, opts) ||
+        d(shape.element, {
+          ...opts,
+          path: opts.path + "/element",
+        })
+    );
     if (shape.minLength !== undefined) {
       i = i.min(shape.minLength);
     }
     if (shape.maxLength !== undefined) {
       i = i.max(shape.maxLength);
     }
+    opts.pathToSchema.set(opts.path, i);
     return i;
   }) as any,
 
   object: ((shape: SzObject, opts: DezerializerOptions) => {
     let i = z.object(
       Object.fromEntries(
-        Object.entries(shape.properties).map(([key, value]) => [
-          key,
-          dezerialize(value as any, opts),
-        ])
+        Object.entries(shape.properties).map(([key, value]) => {
+          return [
+            key,
+            checkRef(value, opts) ||
+              d(value as SzType, {
+                ...opts,
+                path: opts.path + "/properties/" + key,
+              }),
+          ];
+        })
       )
     ) as z.ZodObject<
       {
@@ -313,43 +370,130 @@ const dezerializers = {
       i = i.passthrough();
     }
 
+    opts.pathToSchema.set(opts.path, i);
     return i;
   }) as any,
-  record: ((shape: SzRecord, opts: DezerializerOptions) =>
-    z.record(
-      dezerialize(shape.key, opts),
-      dezerialize(shape.value, opts)
-    )) as any,
-  map: ((shape: SzMap<any, any>, opts: DezerializerOptions) =>
-    z.map(dezerialize(shape.key, opts), dezerialize(shape.value, opts))) as any,
+  record: ((shape: SzRecord, opts: DezerializerOptions) => {
+    const i = z.record(
+      checkRef(shape.key, opts) ||
+        d(shape.key, {
+          ...opts,
+          path: opts.path + "/key",
+        }),
+      checkRef(shape.value, opts) ||
+        d(shape.value, {
+          ...opts,
+          path: opts.path + "/value",
+        })
+    );
+    opts.pathToSchema.set(opts.path, i);
+    return i;
+  }) as any,
+  map: ((shape: SzMap<any, any>, opts: DezerializerOptions) => {
+    const i = z.map(
+      checkRef(shape.key, opts) ||
+        d(shape.key, {
+          ...opts,
+          path: opts.path + "/key",
+        }),
+      checkRef(shape.value, opts) ||
+        d(shape.value, {
+          ...opts,
+          path: opts.path + "/value",
+        })
+    );
+
+    opts.pathToSchema.set(opts.path, i);
+    return i;
+  }) as any,
 
   enum: ((shape: SzEnum) => z.enum(shape.values)) as any,
 
-  union: ((shape: SzUnion, opts: DezerializerOptions) =>
-    z.union(shape.options.map((opt) => dezerialize(opt, opts)) as any)) as any,
+  union: ((shape: SzUnion, opts: DezerializerOptions) => {
+    const i = z.union(
+      shape.options.map(
+        (opt, idx) =>
+          checkRef(opt, opts) ||
+          d(opt, {
+            ...opts,
+            path: opts.path + "/options/" + idx,
+          })
+      ) as any
+    );
+    opts.pathToSchema.set(opts.path, i);
+    return i;
+  }) as any,
   discriminatedUnion: ((
     shape: SzDiscriminatedUnion,
     opts: DezerializerOptions
-  ) =>
-    z.discriminatedUnion(
+  ) => {
+    const i = z.discriminatedUnion(
       shape.discriminator,
-      shape.options.map((opt) => dezerialize(opt, opts)) as any
-    )) as any,
-  intersection: ((shape: SzIntersection, opts: DezerializerOptions) =>
-    z.intersection(
-      dezerialize(shape.left, opts),
-      dezerialize(shape.right, opts)
-    )) as any,
+      shape.options.map(
+        (opt, idx) =>
+          checkRef(opt, opts) ||
+          d(opt, {
+            ...opts,
+            path: opts.path + "/options/" + idx,
+          })
+      ) as any
+    );
+    opts.pathToSchema.set(opts.path, i);
+    return i;
+  }) as any,
+  intersection: ((shape: SzIntersection, opts: DezerializerOptions) => {
+    const i = z.intersection(
+      checkRef(shape.left, opts) ||
+        d(shape.left, {
+          ...opts,
+          path: opts.path + "/left",
+        }),
+      checkRef(shape.right, opts) ||
+        d(shape.right, {
+          ...opts,
+          path: opts.path + "/right",
+        })
+    );
 
-  function: ((shape: SzFunction<any, any>, opts: DezerializerOptions) =>
-    z.function(
-      dezerialize(shape.args, opts) as any,
-      dezerialize(shape.returns, opts)
-    )) as any,
-  promise: ((shape: SzPromise, opts: DezerializerOptions) =>
-    z.promise(dezerialize(shape.value, opts))) as any,
+    opts.pathToSchema.set(opts.path, i);
+    return i;
+  }) as any,
+
+  function: ((shape: SzFunction<any, any>, opts: DezerializerOptions) => {
+    const i = z.function(
+      checkRef(shape.args, opts) ||
+        (d(shape.args, {
+          ...opts,
+          path: opts.path + "/args",
+        }) as any),
+      checkRef(shape.returns, opts) ||
+        d(shape.returns, {
+          ...opts,
+          path: opts.path + "/returns",
+        })
+    );
+
+    opts.pathToSchema.set(opts.path, i);
+    return i;
+  }) as any,
+  promise: ((shape: SzPromise, opts: DezerializerOptions) => {
+    const i = z.promise(
+      checkRef(shape.value, opts) ||
+        d(shape.value, {
+          ...opts,
+          path: opts.path + "/value",
+        })
+    );
+    opts.pathToSchema.set(opts.path, i);
+    return i;
+  }) as any,
   effect: ((shape: SzEffect, opts: DezerializerOptions) => {
-    let base = dezerialize(shape.inner, opts);
+    let base =
+      checkRef(shape.inner, opts) ||
+      d(shape.inner, {
+        ...opts,
+        path: opts.path + "/inner",
+      });
     if (
       !(
         "superRefinements" in opts ||
@@ -357,6 +501,7 @@ const dezerializers = {
         "preprocesses" in opts
       )
     ) {
+      opts.pathToSchema.set(opts.path, base);
       return base;
     }
     for (const { name, type } of shape.effects) {
@@ -368,45 +513,90 @@ const dezerializers = {
         base = z.preprocess(opts.preprocesses[name], base);
       }
     }
+    opts.pathToSchema.set(opts.path, base);
     return base;
   }) as any,
 } satisfies DezerializersMap as DezerializersMap;
 
 // Must match the exported Dezerialize types
 // export function dezerialize<T extends SzType>(shape: T, opts?: DezerializerOptions): Dezerialize<T> {
-export function dezerialize(
+export function dezerializeRefs(
   shape: SzType,
-  opts: DezerializerOptions = {}
+  opts: DezerializerOptions
 ): ZodTypes {
   if ("isOptional" in shape) {
     const { isOptional, ...rest } = shape;
-    const inner = dezerialize(rest, opts);
+    const inner = d(rest, opts);
     return isOptional ? inner.optional() : inner;
   }
 
   if ("isNullable" in shape) {
     const { isNullable, ...rest } = shape;
-    const inner = dezerialize(rest, opts);
+    const inner = d(rest, opts);
     return isNullable ? inner.nullable() : inner;
   }
 
   if ("defaultValue" in shape) {
     const { defaultValue, ...rest } = shape;
-    const inner = dezerialize(rest, opts);
+    const inner = d(rest, opts);
     return inner.default(defaultValue);
   }
 
   if ("readonly" in shape) {
     const { readonly, ...rest } = shape;
-    const inner = dezerialize(rest, opts);
+    const inner = d(rest, opts);
     return readonly ? inner.readonly() : inner;
   }
 
   if ("description" in shape && typeof shape.description === "string") {
     const { description, ...rest } = shape;
-    const inner = dezerialize(rest, opts);
+    const inner = d(rest, opts);
     return inner.describe(description);
   }
 
   return dezerializers[shape.type](shape as any, opts);
+}
+
+export function dezerialize(
+  shape: SzType,
+  opts: Partial<DezerializerOptions> = {}
+): ZodTypes {
+  if (!("path" in opts)) {
+    opts.path = "#";
+  }
+  if (!("pathToSchema" in opts)) {
+    opts.pathToSchema = new Map();
+  }
+  if (!("$refs" in opts)) {
+    opts.$refs = [];
+  }
+  if (!("originalShape" in opts)) {
+    opts.originalShape = shape;
+  }
+
+  const options = opts as DezerializerOptions;
+
+  const dez = dezerializeRefs(shape, options);
+
+  for (const [lazy, $ref] of options.$refs) {
+    lazy._def.getter = () => {
+      const schema = options.pathToSchema.get($ref);
+      if (schema) {
+        return schema;
+      }
+
+      const obj = pointer(
+        options.originalShape,
+        // The `pointer()` doesn't accept standard `#` processing, so slice off
+        $ref.slice(1)
+      );
+
+      // Ensure we act on the same options as the main document JSON
+      const dez = dezerialize(obj, options);
+      options.pathToSchema.set($ref, dez);
+      return dez;
+    };
+  }
+
+  return dez;
 }
