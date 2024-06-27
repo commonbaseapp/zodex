@@ -8,4 +8,11 @@ export default [
       format: "esm",
     },
   },
+  {
+    input: "node_modules/@brettz9/jsonref/dist/pointer.js",
+    output: {
+      file: "demo/vendor/pointer.js",
+      format: "esm",
+    },
+  },
 ];
