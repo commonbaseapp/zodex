@@ -25,7 +25,7 @@
     "prepare": "husky install",
     "check-style": "prettier --check src",
     "lint": "eslint src/**",
-    "test": "vitest --coverage --silent=false",
+    "test": "vitest --coverage --silent=false --reporter=basic",
     "build": "rm -rf dist && pnpm tsc --module esnext --moduleResolution bundler --outDir dist/esm && pnpm tsc && echo '{\"type\": \"commonjs\"}' > dist/package.json && echo '{\"type\": \"module\"}' > dist/esm/package.json",
     "prepublish": "pnpm run build"
   },
@@ -35,6 +35,7 @@
     "zod": "^3.x"
   },
   "dependencies": {
+    "@brettz9/jsonref": "^0.1.0",
     "react": "^18.3.1",
     "type-fest": "^4.20.1",
     "zod": "^3.23.8"

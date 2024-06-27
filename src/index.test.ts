@@ -16,6 +16,20 @@ enum Fruits {
   Banana,
 }
 
+const baseCategorySchema = z.object({
+  name: z.string(),
+});
+const categorySchema = baseCategorySchema.extend({
+  subcategories: z.lazy(() => categorySchema.array()),
+});
+
+const baseCategorySchemaNested = z.object({
+  name: z.string(),
+});
+const categorySchemaNested = baseCategorySchemaNested.extend({
+  subcategory: z.lazy(() => categorySchemaNested),
+});
+
 test.each([
   p(z.boolean(), { type: "boolean" }),
   p(z.nan(), { type: "nan" }),
@@ -392,8 +406,199 @@ test.each([
       value: { type: "literal", value: 42 },
     }
   ),
+
+  p(
+    z.tuple([
+      z.string(),
+      z.number(),
+      z.tuple([z.string()]).rest(
+        z.set(
+          z.record(
+            z.record(
+              z.map(
+                z.map(
+                  z.string(),
+                  z.union([
+                    z.string(),
+                    z.discriminatedUnion("status", [
+                      z.object({
+                        status: z.literal("success"),
+                        data: z.string(),
+                      }),
+                      z.object({
+                        status: z.literal("failed"),
+                        name: z.intersection(
+                          z.object({}),
+                          z.intersection(
+                            z.promise(
+                              z
+                                .function()
+                                .args(z.string())
+                                .returns(
+                                  z.function().args(categorySchemaNested)
+                                )
+                            ),
+                            z.object({})
+                          )
+                        ),
+                      }),
+                    ]),
+                    z.number(),
+                  ])
+                ),
+                z.string()
+              )
+            ),
+            z.string()
+          )
+        )
+      ),
+    ]),
+    {
+      items: [
+        {
+          type: "string",
+        },
+        {
+          type: "number",
+        },
+        {
+          items: [
+            {
+              type: "string",
+            },
+          ],
+          rest: {
+            type: "set",
+            value: {
+              key: {
+                key: {
+                  type: "string",
+                },
+                type: "record",
+                value: {
+                  key: {
+                    key: {
+                      type: "string",
+                    },
+                    type: "map",
+                    value: {
+                      options: [
+                        {
+                          type: "string",
+                        },
+                        {
+                          discriminator: "status",
+                          options: [
+                            {
+                              properties: {
+                                data: {
+                                  type: "string",
+                                },
+                                status: {
+                                  type: "literal",
+                                  value: "success",
+                                },
+                              },
+                              type: "object",
+                            },
+                            {
+                              properties: {
+                                name: {
+                                  left: {
+                                    properties: {},
+                                    type: "object",
+                                  },
+                                  right: {
+                                    left: {
+                                      type: "promise",
+                                      value: {
+                                        args: {
+                                          items: [
+                                            {
+                                              type: "string",
+                                            },
+                                          ],
+                                          rest: {
+                                            type: "unknown",
+                                          },
+                                          type: "tuple",
+                                        },
+                                        returns: {
+                                          args: {
+                                            items: [
+                                              {
+                                                properties: {
+                                                  name: {
+                                                    type: "string",
+                                                  },
+                                                  subcategory: {
+                                                    $ref: "#/items/2/rest/value/key/value/key/value/options/1/options/1/properties/name/right/left/value/returns/args/items/0",
+                                                  },
+                                                },
+                                                type: "object",
+                                              },
+                                            ],
+                                            rest: {
+                                              type: "unknown",
+                                            },
+                                            type: "tuple",
+                                          },
+                                          returns: {
+                                            type: "unknown",
+                                          },
+                                          type: "function",
+                                        },
+                                        type: "function",
+                                      },
+                                    },
+                                    right: {
+                                      properties: {},
+                                      type: "object",
+                                    },
+                                    type: "intersection",
+                                  },
+                                  type: "intersection",
+                                },
+                                status: {
+                                  type: "literal",
+                                  value: "failed",
+                                },
+                              },
+                              type: "object",
+                            },
+                          ],
+                          type: "discriminatedUnion",
+                        },
+                        {
+                          type: "number",
+                        },
+                      ],
+                      type: "union",
+                    },
+                  },
+                  type: "map",
+                  value: {
+                    type: "string",
+                  },
+                },
+              },
+              type: "record",
+              value: {
+                type: "string",
+              },
+            },
+          },
+          type: "tuple",
+        },
+      ],
+      type: "tuple",
+    }
+  ),
 ] as const)("zerialize %#", (schema, shape) => {
-  expect(zerialize(schema)).toEqual(shape);
+  const zer = zerialize(schema);
+  // console.log(JSON.stringify(zer, null, 2));
+  expect(zer).toEqual(shape);
   expect(zerialize(dezerialize(shape) as any)).toEqual(zerialize(schema));
 });
 
@@ -706,4 +911,143 @@ test("describe", () => {
   ) as z.SafeParseSuccess<Date>;
 
   expect(res1.success).to.be.true;
+});
+
+test("recursive schemas (nested)", () => {
+  const baseCategorySchema = z.object({
+    name: z.string(),
+  });
+
+  const categorySchema = baseCategorySchema.extend({
+    subcategories: z.lazy(() => categorySchema.array()),
+  });
+
+  const mainCategorySchema = z.object({
+    nested: z.object({
+      deeplyNested: categorySchema,
+    }),
+  });
+
+  const expectedShape = {
+    type: "object",
+    properties: {
+      nested: {
+        type: "object",
+        properties: {
+          deeplyNested: {
+            properties: {
+              name: {
+                type: "string",
+              },
+              subcategories: {
+                type: "array",
+                element: {
+                  $ref: "#/properties/nested/properties/deeplyNested",
+                },
+              },
+            },
+            type: "object",
+          },
+        },
+      },
+    },
+  };
+
+  const serialized = zerialize(mainCategorySchema);
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized);
+});
+
+test("recursive schemas", () => {
+  const baseCategorySchema = z.object({
+    name: z.string(),
+  });
+
+  // type Category = z.infer<typeof baseCategorySchema> & {
+  //   subcategories: Category[];
+  // };
+
+  const categorySchema /* : z.ZodType<Category> */ = baseCategorySchema.extend({
+    subcategories: z.lazy(() => categorySchema.array()),
+  });
+
+  // categorySchema.parse({
+  //   name: "People",
+  //   subcategories: [
+  //     {
+  //       name: "Politicians",
+  //       subcategories: [
+  //         {
+  //           name: "Presidents",
+  //           subcategories: [],
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // }); // passes
+
+  const expectedShape = {
+    type: "object",
+    properties: {
+      name: {
+        type: "string",
+      },
+      subcategories: {
+        type: "array",
+        element: {
+          $ref: "#",
+        },
+      },
+    },
+  };
+
+  const serialized = zerialize(categorySchema);
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized);
+});
+
+test("recursive tuple schema", () => {
+  const schema = z.tuple([
+    z.string(),
+    z.number(),
+    z.tuple([z.string()]).rest(categorySchemaNested),
+  ]);
+
+  const expectedShape = {
+    items: [
+      {
+        type: "string",
+      },
+      {
+        type: "number",
+      },
+      {
+        type: "tuple",
+        items: [
+          {
+            type: "string",
+          },
+        ],
+        rest: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+            },
+            subcategory: {
+              $ref: "#/items/2/rest",
+            },
+          },
+        },
+      },
+    ],
+    type: "tuple",
+  };
+
+  const serialized = zerialize(schema);
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized);
 });

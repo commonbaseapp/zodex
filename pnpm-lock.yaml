@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@brettz9/jsonref':
+        specifier: ^0.1.0
+        version: 0.1.0
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -104,6 +107,10 @@ packages:
 
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
+
+  '@brettz9/jsonref@0.1.0':
+    resolution: {integrity: sha512-yEEKsd9O84xeBBSj6+FiTUL+9BQNUAJb7KkO2TNFx0spMy79uAs3EFJY3excre57//0L37OyrpLmitPXVAQPdg==}
+    engines: {node: '>=16.14.0'}
 
   '@brettz9/node-static@0.1.1':
     resolution: {integrity: sha512-HHD3JKDCTxudQ7btLDykPlzLBFl+RM70vC6Zsvey1cr9m67UBOmwiP0f2Bk7IjjU3G1c4vAJCjysVxPkmHs7Ew==}
@@ -1722,6 +1729,8 @@ snapshots:
       to-fast-properties: 2.0.0
 
   '@bcoe/v8-coverage@0.2.3': {}
+
+  '@brettz9/jsonref@0.1.0': {}
 
   '@brettz9/node-static@0.1.1':
     dependencies:

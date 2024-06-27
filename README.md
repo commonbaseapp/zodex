@@ -90,6 +90,18 @@ Properties:
 - `transforms` - Map of name to `.transform()` functions
 - `preprocesses` - Map of name to `z.preprocess()` functions
 
+## Use of JSON References
+
+JSON references are used to represent local references. If you wish to use
+JSON references for remote references, you may do so, but you will need
+to use a library like [`json-refs`](https://github.com/whitlockjc/json-refs)
+(with `resolveRefs`) to first resolve such references and then supply the object
+to `dezerialize`.
+
+Like JSON Schema, the `$defs` property may be a reasonable top-level property to
+have reserved as storage for local, non-cyclic references, but again, you should
+use another library to first resolve them.
+
 ## Roadmap
 
 - custom error messages are not included
@@ -100,4 +112,3 @@ Properties:
 - pipeline and catch types are unwrapped
 - `instanceof`, `implement` (function), `custom`, `catchall` are not supported
 - native enums are turned into enums
-- recursive schemas not currently supported
