@@ -285,15 +285,36 @@ const dezerializers = {
     return i;
   }) as any,
 
-  object: ((shape: SzObject, opts: DezerializerOptions) =>
-    z.object(
+  object: ((shape: SzObject, opts: DezerializerOptions) => {
+    let i = z.object(
       Object.fromEntries(
         Object.entries(shape.properties).map(([key, value]) => [
           key,
           dezerialize(value as any, opts),
         ])
       )
-    )) as any,
+    ) as z.ZodObject<
+      {
+        [k: string]: ZodTypes;
+      },
+      "strip" | "strict" | "passthrough",
+      z.ZodTypeAny,
+      {
+        [x: string]: unknown;
+      },
+      {
+        [x: string]: unknown;
+      }
+    >;
+
+    if (shape.unknownKeys === "strict") {
+      i = i.strict();
+    } else if (shape.unknownKeys === "passthrough") {
+      i = i.passthrough();
+    }
+
+    return i;
+  }) as any,
   record: ((shape: SzRecord, opts: DezerializerOptions) =>
     z.record(
       dezerialize(shape.key, opts),
