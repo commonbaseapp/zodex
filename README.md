@@ -79,10 +79,14 @@ options:
 
 ## Options
 
-Both `zerialize` and `dezerialize` accept an options object with the same properties.
+Both `zerialize` and `dezerialize` accept an options object with the
+same properties.
 
-Since Zod does not allow the specification of the names of effects (refinements, transforms, and preprocesses), we allow you to supply as options maps of names to effects so that these can be part of serialization and deserialization. Note that due to technical limitations, we cannot support the regular `refine()` method (and it will be ignored) but `superRefine()` is supported. If none of these options are supplied,
-the effects will be omitted.
+Since Zod does not allow the specification of the names of effects
+(refinements, transforms, and preprocesses), we allow you to supply
+as options maps of names to effects so that these can be part of
+serialization and deserialization. If none of these options are
+supplied, the effects will be omitted.
 
 Properties:
 
@@ -90,13 +94,29 @@ Properties:
 - `transforms` - Map of name to `.transform()` functions
 - `preprocesses` - Map of name to `z.preprocess()` functions
 
+## Use of JSON References
+
+JSON references are used to represent local references. If you wish to use
+JSON references for remote references, you may do so, but you will need
+to use a library like [`json-refs`](https://github.com/whitlockjc/json-refs)
+(with `resolveRefs`) to first resolve such references and then supply the object
+to `dezerialize`.
+
+Zodex will serialize local references, including handling recursive ones. As
+with JSON Schema, the `$defs` property may be a reasonable top-level property
+to use as storage for local references, but it receives no special treatment
+by this library (any property could be targeted by one's references).
+
 ## Roadmap
 
 - custom error messages are not included
 
 ## Caveats
 
-- lazy and brand are omitted
-- pipeline and catch types are unwrapped
-- native enums are turned into enums
-- recursive schemas not currently supported
+- `brand` is not supportable and omitted
+- `lazy`, `pipeline` and `catch` types are unwrapped
+- native enums are turned into `enum`s
+- Due to technical limitations, we cannot support the regular
+  `refine()`, `custom()` and `instanceof` methods (and they will be
+  ignored), but these are really just implementations of `superRefine()`
+  which is supported

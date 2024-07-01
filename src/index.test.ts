@@ -1,7 +1,13 @@
+import fs from "fs";
 import { expect, test } from "vitest";
 import { z } from "zod";
 
 import { dezerialize, SzType, zerialize, Zerialize } from "./index";
+
+const zodexSchemaJSON = JSON.parse(
+  fs.readFileSync("./src/schema.zodex", "utf-8")
+);
+const zodexSchema = dezerialize(zodexSchemaJSON);
 
 const p = <
   Schema extends z.ZodFirstPartySchemaTypes,
@@ -15,6 +21,20 @@ enum Fruits {
   Apple,
   Banana,
 }
+
+const baseCategorySchema = z.object({
+  name: z.string(),
+});
+const categorySchema = baseCategorySchema.extend({
+  subcategories: z.lazy(() => categorySchema.array()),
+});
+
+const baseCategorySchemaNested = z.object({
+  name: z.string(),
+});
+const categorySchemaNested = baseCategorySchemaNested.extend({
+  subcategory: z.lazy(() => categorySchemaNested),
+});
 
 test.each([
   p(z.boolean(), { type: "boolean" }),
@@ -32,6 +52,17 @@ test.each([
       name: {
         type: "string",
       },
+    },
+  }),
+  p(z.object({ name: z.string() }).catchall(z.number()), {
+    type: "object",
+    properties: {
+      name: {
+        type: "string",
+      },
+    },
+    catchall: {
+      type: "number",
     },
   }),
   p(z.number().catch(42), { type: "number" }),
@@ -393,8 +424,11 @@ test.each([
     }
   ),
 ] as const)("zerialize %#", (schema, shape) => {
-  expect(zerialize(schema)).toEqual(shape);
+  const zer = zerialize(schema);
+  expect(zer).toEqual(shape);
   expect(zerialize(dezerialize(shape) as any)).toEqual(zerialize(schema));
+  const parsed = zodexSchema.safeParse(shape);
+  expect(parsed.success).to.be.true;
 });
 
 test.each([
@@ -406,7 +440,22 @@ test.each([
     properties: {},
   }),
 ])("isOptional/isNullable/readonly", (schema, shape) => {
+  const parsed = zodexSchema.safeParse(shape);
+  expect(parsed.success).to.be.true;
   expect(zerialize(dezerialize(shape) as any)).toEqual(zerialize(schema));
+});
+
+test("object with optional properties", () => {
+  const shape = {
+    type: "object",
+    readonly: false,
+  };
+  const parsed = zodexSchema.safeParse(shape);
+  expect(parsed.success).to.be.true;
+
+  expect(() => {
+    dezerialize(shape as any);
+  }).not.to.throw();
 });
 
 test("discriminated union", () => {
@@ -474,6 +523,9 @@ test("discriminated union", () => {
     name: "Lea",
     reach: 42,
   });
+
+  const parsed = zodexSchema.safeParse(shape);
+  expect(parsed.success).to.be.true;
 });
 
 test("coerce (number)", () => {
@@ -485,6 +537,9 @@ test("coerce (number)", () => {
     coerce: true,
   });
   expect(dezerialize(shape as SzType).parse("42")).toEqual(42);
+
+  const parsed = zodexSchema.safeParse(shape);
+  expect(parsed.success).to.be.true;
 });
 
 test("coerce (bigint)", () => {
@@ -496,6 +551,9 @@ test("coerce (bigint)", () => {
     coerce: true,
   });
   expect(dezerialize(shape as SzType).parse("42")).toEqual(42n);
+
+  const parsed = zodexSchema.safeParse(shape);
+  expect(parsed.success).to.be.true;
 });
 
 test("coerce (date)", () => {
@@ -509,6 +567,8 @@ test("coerce (date)", () => {
   expect(dezerialize(shape as SzType).parse("1999-01-01")).toEqual(
     new Date("1999-01-01")
   );
+  const parsed = zodexSchema.safeParse(shape);
+  expect(parsed.success).to.be.true;
 });
 
 test("coerce (string)", () => {
@@ -520,6 +580,9 @@ test("coerce (string)", () => {
     coerce: true,
   });
   expect(dezerialize(shape as SzType).parse(42)).toEqual("42");
+
+  const parsed = zodexSchema.safeParse(shape);
+  expect(parsed.success).to.be.true;
 });
 
 test("coerce (boolean)", () => {
@@ -531,6 +594,8 @@ test("coerce (boolean)", () => {
     coerce: true,
   });
   expect(dezerialize(shape as SzType).parse(0)).toEqual(false);
+  const parsed = zodexSchema.safeParse(shape);
+  expect(parsed.success).to.be.true;
 });
 
 test("named superrefinements and transforms", () => {
@@ -625,6 +690,9 @@ test("named superrefinements and transforms", () => {
   expect(res4.success).to.be.true;
   // Will be transformed down
   expect(res4.data.getTime()).toBeLessThan(new Date().getTime());
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.be.true;
 });
 
 test("preprocess", () => {
@@ -650,6 +718,9 @@ test("preprocess", () => {
 
   expect(res1.success).to.be.true;
   expect(res1.data).to.be.equal(1500);
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.be.true;
 });
 
 test("dezerialize effects without options", () => {
@@ -686,6 +757,9 @@ test("dezerialize effects without options", () => {
   ) as z.SafeParseSuccess<Date>;
 
   expect(res1.success).to.be.true;
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.be.true;
 });
 
 test("describe", () => {
@@ -706,4 +780,408 @@ test("describe", () => {
   ) as z.SafeParseSuccess<Date>;
 
   expect(res1.success).to.be.true;
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.be.true;
+});
+
+test("recursive schemas (nested)", () => {
+  const baseCategorySchema = z.object({
+    name: z.string(),
+  });
+
+  const categorySchema = baseCategorySchema.extend({
+    subcategories: z.lazy(() => categorySchema.array()),
+  });
+
+  const mainCategorySchema = z.object({
+    nested: z.object({
+      deeplyNested: categorySchema,
+    }),
+  });
+
+  const expectedShape = {
+    type: "object",
+    properties: {
+      nested: {
+        type: "object",
+        properties: {
+          deeplyNested: {
+            properties: {
+              name: {
+                type: "string",
+              },
+              subcategories: {
+                type: "array",
+                element: {
+                  $ref: "#/properties/nested/properties/deeplyNested",
+                },
+              },
+            },
+            type: "object",
+          },
+        },
+      },
+    },
+  };
+
+  const serialized = zerialize(mainCategorySchema);
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized);
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.be.true;
+});
+
+test("recursive schemas", () => {
+  const baseCategorySchema = z.object({
+    name: z.string(),
+  });
+
+  // type Category = z.infer<typeof baseCategorySchema> & {
+  //   subcategories: Category[];
+  // };
+
+  const categorySchema /* : z.ZodType<Category> */ = baseCategorySchema.extend({
+    subcategories: z.lazy(() => categorySchema.array()),
+  });
+
+  // categorySchema.parse({
+  //   name: "People",
+  //   subcategories: [
+  //     {
+  //       name: "Politicians",
+  //       subcategories: [
+  //         {
+  //           name: "Presidents",
+  //           subcategories: [],
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // }); // passes
+
+  const expectedShape = {
+    type: "object",
+    properties: {
+      name: {
+        type: "string",
+      },
+      subcategories: {
+        type: "array",
+        element: {
+          $ref: "#",
+        },
+      },
+    },
+  };
+
+  const serialized = zerialize(categorySchema);
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized);
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.be.true;
+});
+
+test("recursive tuple schema", () => {
+  const schema = z.tuple([
+    z.string(),
+    z.number(),
+    z.tuple([z.string()]).rest(categorySchemaNested),
+  ]);
+
+  const expectedShape = {
+    items: [
+      {
+        type: "string",
+      },
+      {
+        type: "number",
+      },
+      {
+        type: "tuple",
+        items: [
+          {
+            type: "string",
+          },
+        ],
+        rest: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+            },
+            subcategory: {
+              $ref: "#/items/2/rest",
+            },
+          },
+        },
+      },
+    ],
+    type: "tuple",
+  };
+
+  const serialized = zerialize(schema);
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized);
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.be.true;
+});
+
+test("Object with inner $ref", () => {
+  const schema = z.promise(
+    z
+      .function()
+      .args(z.string())
+      .returns(z.function().args(categorySchemaNested))
+  );
+  const shape = {
+    type: "promise",
+    value: {
+      args: {
+        items: [
+          {
+            type: "string",
+          },
+        ],
+        rest: {
+          type: "unknown",
+        },
+        type: "tuple",
+      },
+      returns: {
+        args: {
+          items: [
+            {
+              properties: {
+                name: {
+                  type: "string",
+                },
+                subcategory: {
+                  $ref: "#/value/returns/args/items/0",
+                },
+              },
+              type: "object",
+            },
+          ],
+          rest: {
+            type: "unknown",
+          },
+          type: "tuple",
+        },
+        returns: {
+          type: "unknown",
+        },
+        type: "function",
+      },
+      type: "function",
+    },
+  };
+
+  const zer = zerialize(schema);
+  expect(zer).toEqual(shape);
+  expect(zerialize(dezerialize(shape as any) as any)).toEqual(
+    zerialize(schema)
+  );
+  const parsed = zodexSchema.safeParse(shape);
+  expect(parsed.success).to.be.true;
+});
+
+test.skip("Large object with inner $ref", () => {
+  const schema = z.tuple([
+    z.string(),
+    z.number(),
+    z.tuple([z.string()]).rest(
+      z.set(
+        z.record(
+          z.string(),
+          z.record(
+            z.map(
+              z.string(),
+              z.map(
+                z.string(),
+                z.union([
+                  z.string(),
+                  z.discriminatedUnion("status", [
+                    z.object({
+                      status: z.literal("success"),
+                      data: z.string(),
+                    }),
+                    z.object({
+                      status: z.literal("failed"),
+                      name: z.intersection(
+                        z.object({}),
+                        z.intersection(
+                          z.promise(
+                            z
+                              .function()
+                              .args(z.string())
+                              .returns(z.function().args(categorySchemaNested))
+                          ),
+                          z.object({})
+                        )
+                      ),
+                    }),
+                  ]),
+                  z.number(),
+                ])
+              )
+            )
+          )
+        )
+      )
+    ),
+  ]);
+  const shape = {
+    items: [
+      {
+        type: "string",
+      },
+      {
+        type: "number",
+      },
+      {
+        items: [
+          {
+            type: "string",
+          },
+        ],
+        rest: {
+          type: "set",
+          value: {
+            value: {
+              key: {
+                type: "string",
+              },
+              type: "record",
+              value: {
+                value: {
+                  key: {
+                    type: "string",
+                  },
+                  type: "map",
+                  value: {
+                    options: [
+                      {
+                        type: "string",
+                      },
+                      {
+                        discriminator: "status",
+                        options: [
+                          {
+                            properties: {
+                              data: {
+                                type: "string",
+                              },
+                              status: {
+                                type: "literal",
+                                value: "success",
+                              },
+                            },
+                            type: "object",
+                          },
+                          {
+                            properties: {
+                              name: {
+                                left: {
+                                  properties: {},
+                                  type: "object",
+                                },
+                                right: {
+                                  left: {
+                                    type: "promise",
+                                    value: {
+                                      args: {
+                                        items: [
+                                          {
+                                            type: "string",
+                                          },
+                                        ],
+                                        rest: {
+                                          type: "unknown",
+                                        },
+                                        type: "tuple",
+                                      },
+                                      returns: {
+                                        args: {
+                                          items: [
+                                            {
+                                              properties: {
+                                                name: {
+                                                  type: "string",
+                                                },
+                                                subcategory: {
+                                                  $ref: "#/items/2/rest/value/value/value/value/value/options/1/options/1/properties/name/right/left/value/returns/args/items/0",
+                                                },
+                                              },
+                                              type: "object",
+                                            },
+                                          ],
+                                          rest: {
+                                            type: "unknown",
+                                          },
+                                          type: "tuple",
+                                        },
+                                        returns: {
+                                          type: "unknown",
+                                        },
+                                        type: "function",
+                                      },
+                                      type: "function",
+                                    },
+                                  },
+                                  right: {
+                                    properties: {},
+                                    type: "object",
+                                  },
+                                  type: "intersection",
+                                },
+                                type: "intersection",
+                              },
+                              status: {
+                                type: "literal",
+                                value: "failed",
+                              },
+                            },
+                            type: "object",
+                          },
+                        ],
+                        type: "discriminatedUnion",
+                      },
+                      {
+                        type: "number",
+                      },
+                    ],
+                    type: "union",
+                  },
+                },
+                type: "map",
+                key: {
+                  type: "string",
+                },
+              },
+            },
+            type: "record",
+            key: {
+              type: "string",
+            },
+          },
+        },
+        type: "tuple",
+      },
+    ],
+    type: "tuple",
+  };
+  const zer = zerialize(schema);
+  expect(zer).toEqual(shape);
+  expect(zerialize(dezerialize(shape as any) as any)).toEqual(
+    zerialize(schema)
+  );
+  const parsed = zodexSchema.safeParse(shape);
+  expect(parsed.success).to.be.true;
 });

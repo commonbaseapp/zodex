@@ -112,11 +112,13 @@ export type SzArray<T extends SzType = SzType> = {
   maxLength?: number;
 };
 export type SzObject<
-  T extends Record<string, SzType> = Record<string, SzType>
+  T extends Record<string, SzType> = Record<string, SzType>,
+  U extends SzType = SzType
 > = {
   type: "object";
-  properties: T;
+  properties?: T;
   unknownKeys?: "strict" | "strip" | "passthrough";
+  catchall?: U;
 };
 
 export type SzUnion<Options extends [SzType, ...SzType[]] = [SzType]> = {
@@ -200,6 +202,8 @@ export type SzDefault<T> = { defaultValue: T };
 export type SzDescription = { description: string };
 export type SzReadonly = { readonly: boolean };
 
+export type SzRef = { $ref: string };
+
 // Conjunctions
 export type SzKey = SzString | SzNumber;
 export type SzDefaultOrNullable = SzDefault<any> | SzNullable;
@@ -208,7 +212,7 @@ export type SzType = (
   | SzPrimitive
   | SzLiteral<any>
   | SzArray<any>
-  | SzObject<any>
+  | SzObject<any, any>
   | SzUnion<any>
   | SzDiscriminatedUnion<any, any>
   | SzIntersection<any, any>
@@ -225,7 +229,7 @@ export type SzType = (
     SzNullable & SzOptional & SzDefault<any> & SzDescription & SzReadonly
   >;
 
-export type SzUnionize<T extends SzType> =
+export type SzUnionize<T extends SzType | SzRef> =
   | T
   | (T extends SzArray<infer T>
       ? SzUnionize<T>
