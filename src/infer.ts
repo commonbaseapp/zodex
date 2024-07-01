@@ -16,6 +16,7 @@ import {
   SzFunction,
   SzEnum,
   SzPromise,
+  SzRef,
 } from "./types";
 
 type PrimitiveTypes = {
