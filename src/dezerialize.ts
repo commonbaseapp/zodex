@@ -1,4 +1,3 @@
-import { pointer } from "jsonref";
 import { z } from "zod";
 import {
   SzOptional,
@@ -557,6 +556,15 @@ export function dezerializeRefs(
   return dezerializers[shape.type](shape as any, opts);
 }
 
+function resolvePointer(obj: any, pointer: string): any {
+  const tokens = pointer.split("/").slice(1);
+  return tokens.reduce((acc, token) => {
+    /* c8 ignore next -- Guard */
+    if (acc === undefined) return acc;
+    return acc[token.replace(/~1/g, "/").replace(/~0/g, "~")];
+  }, obj);
+}
+
 export function dezerialize(
   shape: SzType,
   opts: Partial<DezerializerOptions> = {}
@@ -585,11 +593,7 @@ export function dezerialize(
         return schema;
       }
 
-      const obj = pointer(
-        options.originalShape,
-        // The `pointer()` doesn't accept standard `#` processing, so slice off
-        $ref.slice(1)
-      );
+      const obj = resolvePointer(options.originalShape, $ref);
 
       // Ensure we act on the same options as the main document JSON
       const dez = dezerialize(obj, options);

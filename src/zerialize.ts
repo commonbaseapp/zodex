@@ -594,15 +594,14 @@ export function zerializeRefs<T extends ZodTypes>(
 ): Zerialize<T> | SzRef {
   // export function zerialize(schema: ZodTypes, opts?: Partial<ZerializerOptions> | undefined): unknown {
 
+  if (opts.seenObjects.has(schema)) {
+    return { $ref: opts.seenObjects.get(schema)! } as SzRef;
+  }
+
   const { _def: def } = schema;
 
   const objectPath =
     "#" + (opts.currentPath.length ? "/" + opts.currentPath.join("/") : "");
-
-  if (opts.seenObjects.has(schema)) {
-    // @ts-expect-error Not infinite type instantiation
-    return { $ref: opts.seenObjects.get(schema)! };
-  }
 
   opts.seenObjects.set(schema, objectPath);
 
