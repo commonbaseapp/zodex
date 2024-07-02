@@ -144,8 +144,8 @@ type ZerializerOptions = {
   preprocesses?: {
     [key: string]: (value: any, ctx: z.RefinementCtx) => unknown;
   };
-  paths: string[];
-  pathMap: WeakMap<z.ZodTypeDef, string[]>;
+  currentPath: string[];
+  seenObjects: WeakMap<z.ZodTypeDef, string>;
 };
 
 type ZerializersMap = {
@@ -319,46 +319,52 @@ const zerializers = {
   ZodLiteral: (def) => ({ type: "literal", value: def.value }),
 
   ZodTuple: (def, opts) => {
-    opts.pathMap.set(def, [...opts.paths]);
-    const restPaths = [...opts.paths];
-    opts.paths.push("items");
+    opts.currentPath.push("items");
+    const items = def.items.map((item: ZodTypes, idx: number) => {
+      opts.currentPath.push(String(idx));
+      const result = s(item, opts);
+      opts.currentPath.pop();
+      return result;
+    });
+    opts.currentPath.pop();
+
+    let rest;
+    if (def.rest) {
+      opts.currentPath.push("rest");
+      rest = s(def.rest, opts);
+      opts.currentPath.pop();
+    }
 
     return {
       type: "tuple",
-      items: def.items.map((item: ZodTypes, idx: number) =>
-        s(item, {
-          ...opts,
-          paths: [...opts.paths, String(idx)],
-        })
-      ),
+      items,
       ...(def.rest
         ? {
-            rest: s(def.rest, {
-              ...opts,
-              paths: [...restPaths, "rest"],
-            }),
+            rest,
           }
         : {}),
     };
   },
   ZodSet: (def, opts) => {
-    opts.pathMap.set(def, [...opts.paths]);
-    opts.paths.push("value");
+    opts.currentPath.push("value");
+    const value = s(def.valueType, opts);
+    opts.currentPath.pop();
 
     return {
       type: "set",
-      value: s(def.valueType, opts),
+      value,
       ...(def.minSize === null ? {} : { minSize: def.minSize.value }),
       ...(def.maxSize === null ? {} : { maxSize: def.maxSize.value }),
     };
   },
   ZodArray: (def, opts) => {
-    opts.pathMap.set(def, [...opts.paths]);
-    opts.paths.push("element");
+    opts.currentPath.push("element");
+    const element = s(def.type, opts);
+    opts.currentPath.pop();
 
     return {
       type: "array",
-      element: s(def.type, opts),
+      element,
 
       ...(def.exactLength === null
         ? {}
@@ -372,8 +378,15 @@ const zerializers = {
   },
 
   ZodObject: (def, opts) => {
-    opts.pathMap.set(def, [...opts.paths]);
-    opts.paths.push("properties");
+    opts.currentPath.push("properties");
+
+    const properties: { [key: string]: Zerialize<any> } = {};
+    for (const [key, schema] of Object.entries(def.shape())) {
+      opts.currentPath.push(key);
+      properties[key] = s(schema as ZodTypes, opts);
+      opts.currentPath.pop();
+    }
+    opts.currentPath.pop();
 
     return {
       type: "object",
@@ -382,45 +395,37 @@ const zerializers = {
         : {
             unknownKeys: def.unknownKeys,
           }),
-      properties: Object.fromEntries(
-        Object.entries(def.shape()).map(([key, value]) => [
-          key,
-          s(value as ZodTypes, {
-            ...opts,
-            paths: [...opts.paths, key],
-          }),
-        ])
-      ),
+      properties,
     };
   },
   ZodRecord: (def, opts) => {
-    opts.pathMap.set(def, [...opts.paths]);
+    opts.currentPath.push("key");
+    const key = s(def.keyType, opts);
+    opts.currentPath.pop();
+
+    opts.currentPath.push("value");
+    const value = s(def.valueType, opts);
+    opts.currentPath.pop();
 
     return {
       type: "record",
-      key: s(def.keyType, {
-        ...opts,
-        paths: [...opts.paths, "key"],
-      }),
-      value: s(def.valueType, {
-        ...opts,
-        paths: [...opts.paths, "value"],
-      }),
+      key,
+      value,
     };
   },
   ZodMap: (def, opts) => {
-    opts.pathMap.set(def, [...opts.paths]);
+    opts.currentPath.push("key");
+    const key = s(def.keyType, opts);
+    opts.currentPath.pop();
+
+    opts.currentPath.push("value");
+    const value = s(def.valueType, opts);
+    opts.currentPath.pop();
 
     return {
       type: "map",
-      key: s(def.keyType, {
-        ...opts,
-        paths: [...opts.paths, "key"],
-      }),
-      value: s(def.valueType, {
-        ...opts,
-        paths: [...opts.paths, "value"],
-      }),
+      key,
+      value,
     };
   },
 
@@ -429,70 +434,75 @@ const zerializers = {
   ZodNativeEnum: () => ({ type: "unknown" }),
 
   ZodUnion: (def, opts) => {
-    opts.pathMap.set(def, [...opts.paths]);
-    opts.paths.push("options");
+    opts.currentPath.push("options");
 
-    return {
+    const union = {
       type: "union",
-      options: def.options.map((opt, idx) =>
-        s(opt, {
-          ...opts,
-          paths: [...opts.paths, idx],
-        })
-      ),
+      options: def.options.map((opt, idx) => {
+        opts.currentPath.push(String(idx));
+        const result = s(opt, opts);
+        opts.currentPath.pop();
+        return result;
+      }),
     };
+
+    opts.currentPath.pop();
+    return union;
   },
   ZodDiscriminatedUnion: (def, opts) => {
-    opts.pathMap.set(def, [...opts.paths]);
-    opts.paths.push("options");
+    opts.currentPath.push("options");
 
-    return {
+    const discriminatedUnion = {
       type: "discriminatedUnion",
       discriminator: def.discriminator,
-      options: def.options.map((opt, idx) =>
-        s(opt, {
-          ...opts,
-          paths: [...opts.paths, String(idx)],
-        })
-      ),
+      options: def.options.map((opt, idx) => {
+        opts.currentPath.push(String(idx));
+        const result = s(opt, opts);
+        opts.currentPath.pop();
+        return result;
+      }),
     };
+
+    opts.currentPath.pop();
+    return discriminatedUnion;
   },
   ZodIntersection: (def, opts) => {
-    opts.pathMap.set(def, [...opts.paths]);
+    opts.currentPath.push("left");
+    const left = s(def.left, opts);
+    opts.currentPath.pop();
+
+    opts.currentPath.push("right");
+    const right = s(def.right, opts);
+    opts.currentPath.pop();
 
     return {
       type: "intersection",
-      left: s(def.left, {
-        ...opts,
-        paths: [...opts.paths, "left"],
-      }),
-      right: s(def.right, {
-        ...opts,
-        paths: [...opts.paths, "right"],
-      }),
+      left,
+      right,
     };
   },
 
   ZodFunction: (def, opts) => {
-    opts.pathMap.set(def, [...opts.paths]);
+    opts.currentPath.push("args");
+    const args = s(def.args, opts);
+    opts.currentPath.pop();
+
+    opts.currentPath.push("returns");
+    const returns = s(def.returns, opts);
+    opts.currentPath.pop();
 
     return {
       type: "function",
-      args: s(def.args, {
-        ...opts,
-        paths: [...opts.paths, "args"],
-      }),
-      returns: s(def.returns, {
-        ...opts,
-        paths: [...opts.paths, "returns"],
-      }),
+      args,
+      returns,
     };
   },
   ZodPromise: (def, opts) => {
-    opts.pathMap.set(def, [...opts.paths]);
-    opts.paths.push("value");
+    opts.currentPath.push("value");
+    const value = s(def.type, opts);
+    opts.currentPath.pop();
 
-    return { type: "promise", value: s(def.type, opts) };
+    return { type: "promise", value };
   },
 
   ZodLazy: (def, opts) => {
@@ -561,13 +571,14 @@ const zerializers = {
       d = d.schema._def;
     } while (d && d.typeName === "ZodEffects");
 
-    opts.pathMap.set(def, [...opts.paths]);
-    opts.paths.push("inner");
+    opts.currentPath.push("schema");
+    const inner = s(lastDef.schema, opts);
+    opts.currentPath.pop();
 
     return {
       type: "effect",
       effects,
-      inner: s(lastDef.schema, opts),
+      inner,
     };
   },
   ZodBranded: (def, opts) => s(def.type, opts),
@@ -585,15 +596,15 @@ export function zerializeRefs<T extends ZodTypes>(
 
   const { _def: def } = schema;
 
-  if (opts.pathMap.has(def)) {
-    const pathMap = opts.pathMap.get(def) as string[];
-    // @ts-expect-error Type instantiation not actually infinite
-    return {
-      $ref: "#" + (pathMap.length ? "/" + pathMap.join("/") : ""),
-    };
+  const objectPath =
+    "#" + (opts.currentPath.length ? "/" + opts.currentPath.join("/") : "");
+
+  if (opts.seenObjects.has(schema)) {
+    // @ts-expect-error Not infinite type instantiation
+    return { $ref: opts.seenObjects.get(schema)! };
   }
 
-  opts.pathMap.set(def, []);
+  opts.seenObjects.set(schema, objectPath);
 
   const zer = zerializers[def.typeName](def as any, opts as ZerializerOptions);
 
@@ -608,11 +619,11 @@ export function zerialize<T extends ZodTypes>(
   schema: T,
   opts: Partial<ZerializerOptions> = {}
 ): Zerialize<T> {
-  if (!opts.paths) {
-    opts.paths = [];
+  if (!opts.currentPath) {
+    opts.currentPath = [];
   }
-  if (!opts.pathMap) {
-    opts.pathMap = new WeakMap();
+  if (!opts.seenObjects) {
+    opts.seenObjects = new WeakMap();
   }
 
   return zerializeRefs(schema, opts as ZerializerOptions) as Zerialize<T>;
