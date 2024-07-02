@@ -526,31 +526,41 @@ export function dezerializeRefs(
   if ("isOptional" in shape) {
     const { isOptional, ...rest } = shape;
     const inner = d(rest, opts);
-    return isOptional ? inner.optional() : inner;
+    const result = isOptional ? inner.optional() : inner;
+    opts.pathToSchema.set(opts.path, result);
+    return result;
   }
 
   if ("isNullable" in shape) {
     const { isNullable, ...rest } = shape;
     const inner = d(rest, opts);
-    return isNullable ? inner.nullable() : inner;
+    const result = isNullable ? inner.nullable() : inner;
+    opts.pathToSchema.set(opts.path, result);
+    return result;
   }
 
   if ("defaultValue" in shape) {
     const { defaultValue, ...rest } = shape;
     const inner = d(rest, opts);
-    return inner.default(defaultValue);
+    const result = inner.default(defaultValue);
+    opts.pathToSchema.set(opts.path, result);
+    return result;
   }
 
   if ("readonly" in shape) {
     const { readonly, ...rest } = shape;
     const inner = d(rest, opts);
-    return readonly ? inner.readonly() : inner;
+    const result = readonly ? inner.readonly() : inner;
+    opts.pathToSchema.set(opts.path, result);
+    return result;
   }
 
   if ("description" in shape && typeof shape.description === "string") {
     const { description, ...rest } = shape;
     const inner = d(rest, opts);
-    return inner.describe(description);
+    const result = inner.describe(description);
+    opts.pathToSchema.set(opts.path, result);
+    return result;
   }
 
   return dezerializers[shape.type](shape as any, opts);

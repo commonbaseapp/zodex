@@ -157,8 +157,14 @@ type ZerializersMap = {
 
 const s = zerializeRefs as any;
 const zerializers = {
-  ZodOptional: (def, opts) => ({ ...s(def.innerType, opts), isOptional: true }),
-  ZodNullable: (def, opts) => ({ ...s(def.innerType, opts), isNullable: true }),
+  ZodOptional: (def, opts) => ({
+    ...s(def.innerType, opts),
+    isOptional: true,
+  }),
+  ZodNullable: (def, opts) => ({
+    ...s(def.innerType, opts),
+    isNullable: true,
+  }),
   ZodDefault: (def, opts) => ({
     ...s(def.innerType, opts),
     defaultValue: def.defaultValue(),
@@ -506,7 +512,8 @@ const zerializers = {
   },
 
   ZodLazy: (def, opts) => {
-    return s(def.getter(), opts);
+    const getter = def.getter();
+    return s(getter, opts);
   },
   ZodEffects: (def, opts) => {
     if (
@@ -584,7 +591,10 @@ const zerializers = {
   ZodBranded: (def, opts) => s(def.type, opts),
   ZodPipeline: (def, opts) => s(def.out, opts),
   ZodCatch: (def, opts) => s(def.innerType, opts),
-  ZodReadonly: (def, opts) => ({ ...s(def.innerType, opts), readonly: true }),
+  ZodReadonly: (def, opts) => ({
+    ...s(def.innerType, opts),
+    readonly: true,
+  }),
 } satisfies ZerializersMap as ZerializersMap;
 
 // Must match the exported Zerialize types

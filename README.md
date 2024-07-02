@@ -103,6 +103,21 @@ with JSON Schema, the `$defs` property may be a reasonable top-level property
 to use as storage for local references, but it receives no special treatment
 by this library (any property could be targeted by one's references).
 
+Note that if you wish to use additional properties with an item containing a
+reference, e.g., `isOptional`, you will first need to wrap the JSON reference
+within a single-item union such as in the following:
+
+```json
+{
+  "type": "union",
+  "options": [
+    {
+      "$ref": "#/properties/id"
+    }
+  ]
+}
+```
+
 ## Roadmap
 
 - custom error messages are not included

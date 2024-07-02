@@ -957,6 +957,9 @@ test("recursive schemas (nested)", () => {
   expect(serialized).toEqual(expectedShape);
 
   const dezSchema = dezerialize(serialized);
+
+  const reserialized = zerialize(dezSchema as any);
+  expect(reserialized).toEqual(expectedShape);
 });
 
 test("recursive schemas", () => {
@@ -1006,6 +1009,8 @@ test("recursive schemas", () => {
   expect(serialized).toEqual(expectedShape);
 
   const dezSchema = dezerialize(serialized);
+  const reserialized = zerialize(dezSchema as any);
+  expect(reserialized).toEqual(expectedShape);
 });
 
 test("recursive tuple schema", () => {
@@ -1050,6 +1055,8 @@ test("recursive tuple schema", () => {
   expect(serialized).toEqual(expectedShape);
 
   const dezSchema = dezerialize(serialized);
+  const reserialized = zerialize(dezSchema as any);
+  expect(reserialized).toEqual(expectedShape);
 });
 
 test("Nested recursion", () => {
@@ -1156,19 +1163,39 @@ test("Nested recursion", () => {
               isOptional: true,
             },
             test: {
-              $ref: "#/properties/orderBy/element/properties/id",
+              type: "union",
+              options: [
+                {
+                  $ref: "#/properties/orderBy/element/properties/id",
+                },
+              ],
               isOptional: true,
             },
             file: {
-              $ref: "#/properties/orderBy/element/properties/id",
+              type: "union",
+              options: [
+                {
+                  $ref: "#/properties/orderBy/element/properties/id",
+                },
+              ],
               isOptional: true,
             },
             file2: {
-              $ref: "#/properties/orderBy/element/properties/id",
+              type: "union",
+              options: [
+                {
+                  $ref: "#/properties/orderBy/element/properties/id",
+                },
+              ],
               isOptional: true,
             },
             profileContact: {
-              $ref: "#/properties/orderBy/element/properties/id",
+              type: "union",
+              options: [
+                {
+                  $ref: "#/properties/orderBy/element/properties/id",
+                },
+              ],
               isOptional: true,
             },
           },
@@ -1288,27 +1315,52 @@ test("Nested recursion", () => {
           type: "object",
           properties: {
             id: {
-              $ref: "#/properties/id",
+              type: "union",
+              options: [
+                {
+                  $ref: "#/properties/id",
+                },
+              ],
               isOptional: true,
               description: '{"json":{"type":"string"}}',
             },
             test: {
-              $ref: "#/properties/id",
+              type: "union",
+              options: [
+                {
+                  $ref: "#/properties/id",
+                },
+              ],
               isOptional: true,
               description: '{"json":{"type":"string"}}',
             },
             file: {
-              $ref: "#/properties/id",
+              type: "union",
+              options: [
+                {
+                  $ref: "#/properties/id",
+                },
+              ],
               isOptional: true,
               description: '{"json":{"type":"string"}}',
             },
             file2: {
-              $ref: "#/properties/id",
+              type: "union",
+              options: [
+                {
+                  $ref: "#/properties/id",
+                },
+              ],
               isOptional: true,
               description: '{"json":{"type":"string"}}',
             },
             profileContact: {
-              $ref: "#/properties/id",
+              type: "union",
+              options: [
+                {
+                  $ref: "#/properties/id",
+                },
+              ],
               isOptional: true,
               description: '{"json":{"type":"string"}}',
             },
@@ -1345,6 +1397,14 @@ test("Nested recursion", () => {
   console.log(JSON.stringify(zer, null, 2));
   expect(zer).toEqual(expectedShape);
   const dezer = dezerialize(zer);
-  const rezer = zerialize(mainSchema);
+
+  // console.log(zerialize(dezer.shape.profileContact._def.getter()));
+  // console.log(dezer.shape.profileContact._def.getter()._def.typeName); // ZodObject
+
+  // expect(dezer.shape.profileContact._def.getter()._def.typeName).toEqual(z.ZodFirstPartyTypeKind.ZodOptional)
+  // expect(dezer.shape.profileContact._def.getter()._def.innerType._def.typeName).toEqual(z.ZodFirstPartyTypeKind.ZodObject)
+  // expect(dezer.shape.profileContact._def.getter().isOptional()).to.be.true;
+
+  const rezer = zerialize(dezer as any);
   expect(rezer).toEqual(expectedShape);
 });
