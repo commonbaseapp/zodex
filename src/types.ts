@@ -181,6 +181,17 @@ export type SzEnum<
   type: "enum";
   values: Values;
 };
+
+export type SzNativeEnum<
+  Values extends { [key: string]: string | number; [key: number]: string } = {
+    [key: string]: string | number;
+    [key: number]: string;
+  }
+> = {
+  type: "nativeEnum";
+  values: Values;
+};
+
 export type SzPromise<T extends SzType = SzType> = {
   type: "promise";
   value: T;
@@ -232,6 +243,7 @@ export type SzType = (
   | SzSet<any>
   | SzFunction<any, any>
   | SzEnum<any>
+  | SzNativeEnum<any>
   | SzPromise<any>
   | SzEffect<any>
   | SzCatch<any>

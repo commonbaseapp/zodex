@@ -425,8 +425,11 @@ const zerializers = {
   }),
 
   ZodEnum: (def) => ({ type: "enum", values: def.values }),
-  // TODO: turn into enum
-  ZodNativeEnum: () => ({ type: "unknown" }),
+
+  ZodNativeEnum: (def, opts) => ({
+    type: "nativeEnum",
+    values: def.values,
+  }),
 
   ZodUnion: (def, opts) => ({
     type: "union",
@@ -562,6 +565,7 @@ const zerializers = {
     const catchValue = def.catchValue({
       // No errors to report, so just add an empty set
       get error() {
+        /* c8 ignore next 2 -- Unused */
         return new z.ZodError([]);
       },
       // We don't have any input yet, so just provide `undefined`
