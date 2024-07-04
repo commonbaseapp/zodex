@@ -144,6 +144,7 @@ type ZerializerOptions = {
   preprocesses?: {
     [key: string]: (value: any, ctx: z.RefinementCtx) => unknown;
   };
+  wrapReferences?: boolean;
   currentPath: string[];
   seenObjects: WeakMap<z.ZodTypeDef, string>;
 };
@@ -158,15 +159,15 @@ type ZerializersMap = {
 const s = zerializeRefs as any;
 const zerializers = {
   ZodOptional: (def, opts) => ({
-    ...s(def.innerType, opts),
+    ...s(def.innerType, opts, true),
     isOptional: true,
   }),
   ZodNullable: (def, opts) => ({
-    ...s(def.innerType, opts),
+    ...s(def.innerType, opts, true),
     isNullable: true,
   }),
   ZodDefault: (def, opts) => ({
-    ...s(def.innerType, opts),
+    ...s(def.innerType, opts, true),
     defaultValue: def.defaultValue(),
   }),
 
@@ -513,7 +514,7 @@ const zerializers = {
 
   ZodLazy: (def, opts) => {
     const getter = def.getter();
-    return s(getter, opts);
+    return s(getter, opts, getter.isOptional() || getter.isNullable());
   },
   ZodEffects: (def, opts) => {
     if (
@@ -592,7 +593,7 @@ const zerializers = {
   ZodPipeline: (def, opts) => s(def.out, opts),
   ZodCatch: (def, opts) => s(def.innerType, opts),
   ZodReadonly: (def, opts) => ({
-    ...s(def.innerType, opts),
+    ...s(def.innerType, opts, true),
     readonly: true,
   }),
 } satisfies ZerializersMap as ZerializersMap;
@@ -600,12 +601,18 @@ const zerializers = {
 // Must match the exported Zerialize types
 export function zerializeRefs<T extends ZodTypes>(
   schema: T,
-  opts: ZerializerOptions
+  opts: ZerializerOptions,
+  wrapReferences?: boolean
 ): Zerialize<T> | SzRef {
   // export function zerialize(schema: ZodTypes, opts?: Partial<ZerializerOptions> | undefined): unknown {
 
   if (opts.seenObjects.has(schema)) {
-    return { $ref: opts.seenObjects.get(schema)! } as SzRef;
+    return wrapReferences // && schema._def.typeName !== "ZodOptional"
+      ? ({
+          type: "union",
+          options: [{ $ref: opts.seenObjects.get(schema)! }],
+        } as any)
+      : ({ $ref: opts.seenObjects.get(schema)! } as SzRef);
   }
 
   const { _def: def } = schema;
