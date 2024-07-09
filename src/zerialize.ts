@@ -144,7 +144,6 @@ type ZerializerOptions = {
   preprocesses?: {
     [key: string]: (value: any, ctx: z.RefinementCtx) => unknown;
   };
-  wrapReferences?: boolean;
   currentPath: string[];
   seenObjects: WeakMap<z.ZodTypeDef, string>;
 };
@@ -326,52 +325,43 @@ const zerializers = {
   ZodLiteral: (def) => ({ type: "literal", value: def.value }),
 
   ZodTuple: (def, opts) => {
-    opts.currentPath.push("items");
-    const items = def.items.map((item: ZodTypes, idx: number) => {
-      opts.currentPath.push(String(idx));
-      const result = s(item, opts);
-      opts.currentPath.pop();
-      return result;
-    });
-    opts.currentPath.pop();
-
-    let rest;
-    if (def.rest) {
-      opts.currentPath.push("rest");
-      rest = s(def.rest, opts);
-      opts.currentPath.pop();
-    }
-
     return {
       type: "tuple",
-      items,
+      items: def.items.map((item: ZodTypes, idx: number) => {
+        const result = s(item, {
+          ...opts,
+          currentPath: [...opts.currentPath, "items", String(idx)],
+        });
+        return result;
+      }),
       ...(def.rest
         ? {
-            rest,
+            rest: s(def.rest, {
+              ...opts,
+              currentPath: [...opts.currentPath, "rest"],
+            }),
           }
         : {}),
     };
   },
   ZodSet: (def, opts) => {
-    opts.currentPath.push("value");
-    const value = s(def.valueType, opts);
-    opts.currentPath.pop();
-
     return {
       type: "set",
-      value,
+      value: s(def.valueType, {
+        ...opts,
+        currentPath: [...opts.currentPath, "value"],
+      }),
       ...(def.minSize === null ? {} : { minSize: def.minSize.value }),
       ...(def.maxSize === null ? {} : { maxSize: def.maxSize.value }),
     };
   },
   ZodArray: (def, opts) => {
-    opts.currentPath.push("element");
-    const element = s(def.type, opts);
-    opts.currentPath.pop();
-
     return {
       type: "array",
-      element,
+      element: s(def.type, {
+        ...opts,
+        currentPath: [...opts.currentPath, "element"],
+      }),
 
       ...(def.exactLength === null
         ? {}
@@ -385,15 +375,13 @@ const zerializers = {
   },
 
   ZodObject: (def, opts) => {
-    opts.currentPath.push("properties");
-
     const properties: { [key: string]: Zerialize<any> } = {};
     for (const [key, schema] of Object.entries(def.shape())) {
-      opts.currentPath.push(key);
-      properties[key] = s(schema as ZodTypes, opts);
-      opts.currentPath.pop();
+      properties[key] = s(schema as ZodTypes, {
+        ...opts,
+        currentPath: [...opts.currentPath, "properties", key],
+      });
     }
-    opts.currentPath.pop();
 
     return {
       type: "object",
@@ -406,33 +394,29 @@ const zerializers = {
     };
   },
   ZodRecord: (def, opts) => {
-    opts.currentPath.push("key");
-    const key = s(def.keyType, opts);
-    opts.currentPath.pop();
-
-    opts.currentPath.push("value");
-    const value = s(def.valueType, opts);
-    opts.currentPath.pop();
-
     return {
       type: "record",
-      key,
-      value,
+      key: s(def.keyType, {
+        ...opts,
+        currentPath: [...opts.currentPath, "key"],
+      }),
+      value: s(def.valueType, {
+        ...opts,
+        currentPath: [...opts.currentPath, "value"],
+      }),
     };
   },
   ZodMap: (def, opts) => {
-    opts.currentPath.push("key");
-    const key = s(def.keyType, opts);
-    opts.currentPath.pop();
-
-    opts.currentPath.push("value");
-    const value = s(def.valueType, opts);
-    opts.currentPath.pop();
-
     return {
       type: "map",
-      key,
-      value,
+      key: s(def.keyType, {
+        ...opts,
+        currentPath: [...opts.currentPath, "key"],
+      }),
+      value: s(def.valueType, {
+        ...opts,
+        currentPath: [...opts.currentPath, "value"],
+      }),
     };
   },
 
@@ -441,75 +425,65 @@ const zerializers = {
   ZodNativeEnum: () => ({ type: "unknown" }),
 
   ZodUnion: (def, opts) => {
-    opts.currentPath.push("options");
-
-    const union = {
+    return {
       type: "union",
       options: def.options.map((opt, idx) => {
-        opts.currentPath.push(String(idx));
-        const result = s(opt, opts);
-        opts.currentPath.pop();
+        const result = s(opt, {
+          ...opts,
+          currentPath: [...opts.currentPath, "options", String(idx)],
+        });
         return result;
       }),
     };
-
-    opts.currentPath.pop();
-    return union;
   },
   ZodDiscriminatedUnion: (def, opts) => {
-    opts.currentPath.push("options");
-
-    const discriminatedUnion = {
+    return {
       type: "discriminatedUnion",
       discriminator: def.discriminator,
       options: def.options.map((opt, idx) => {
-        opts.currentPath.push(String(idx));
-        const result = s(opt, opts);
-        opts.currentPath.pop();
+        const result = s(opt, {
+          ...opts,
+          currentPath: [...opts.currentPath, "options", String(idx)],
+        });
         return result;
       }),
     };
-
-    opts.currentPath.pop();
-    return discriminatedUnion;
   },
   ZodIntersection: (def, opts) => {
-    opts.currentPath.push("left");
-    const left = s(def.left, opts);
-    opts.currentPath.pop();
-
-    opts.currentPath.push("right");
-    const right = s(def.right, opts);
-    opts.currentPath.pop();
-
     return {
       type: "intersection",
-      left,
-      right,
+      left: s(def.left, {
+        ...opts,
+        currentPath: [...opts.currentPath, "left"],
+      }),
+      right: s(def.right, {
+        ...opts,
+        currentPath: [...opts.currentPath, "right"],
+      }),
     };
   },
 
   ZodFunction: (def, opts) => {
-    opts.currentPath.push("args");
-    const args = s(def.args, opts);
-    opts.currentPath.pop();
-
-    opts.currentPath.push("returns");
-    const returns = s(def.returns, opts);
-    opts.currentPath.pop();
-
     return {
       type: "function",
-      args,
-      returns,
+      args: s(def.args, {
+        ...opts,
+        currentPath: [...opts.currentPath, "args"],
+      }),
+      returns: s(def.returns, {
+        ...opts,
+        currentPath: [...opts.currentPath, "returns"],
+      }),
     };
   },
   ZodPromise: (def, opts) => {
-    opts.currentPath.push("value");
-    const value = s(def.type, opts);
-    opts.currentPath.pop();
-
-    return { type: "promise", value };
+    return {
+      type: "promise",
+      value: s(def.type, {
+        ...opts,
+        currentPath: [...opts.currentPath, "value"],
+      }),
+    };
   },
 
   ZodLazy: (def, opts) => {
@@ -579,14 +553,13 @@ const zerializers = {
       d = d.schema._def;
     } while (d && d.typeName === "ZodEffects");
 
-    opts.currentPath.push("schema");
-    const inner = s(lastDef.schema, opts);
-    opts.currentPath.pop();
-
     return {
       type: "effect",
       effects,
-      inner,
+      inner: s(lastDef.schema, {
+        ...opts,
+        currentPath: [...opts.currentPath, "schema"],
+      }),
     };
   },
   ZodBranded: (def, opts) => s(def.type, opts),
