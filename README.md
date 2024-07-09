@@ -90,6 +90,39 @@ Properties:
 - `transforms` - Map of name to `.transform()` functions
 - `preprocesses` - Map of name to `z.preprocess()` functions
 
+## Use of JSON References
+
+JSON references are used to represent local references. If you wish to use
+JSON references for remote (non-cyclic) references, you may do so, but you
+will need to use a library like
+[`json-refs`](https://github.com/whitlockjc/json-refs) (with `resolveRefs`)
+to first resolve such references and then supply the object to `dezerialize`.
+
+Zodex will serialize local references, including handling recursive ones. As
+with JSON Schema, the `$defs` property may be a reasonable top-level property
+to use as storage for local references, but it receives no special treatment
+by this library (any property could be targeted by one's references).
+
+Note that if you wish to use additional properties with an item containing a
+reference, e.g., `isOptional`, you will first need to wrap the JSON reference
+within a single-item union such as in the following:
+
+```json
+{
+  "type": "union",
+  "options": [
+    {
+      "$ref": "#/properties/id"
+    }
+  ]
+}
+```
+
+Note that due to technical limitations with Zod, we are unable to allow a
+JSON reference in place of an object `properties` object. You can either
+resolve this first with another library (if it is a non-cyclic reference),
+or target the whole object or individual properties.
+
 ## Roadmap
 
 - custom error messages are not included
@@ -99,4 +132,3 @@ Properties:
 - lazy and brand are omitted
 - pipeline and catch types are unwrapped
 - native enums are turned into enums
-- recursive schemas not currently supported

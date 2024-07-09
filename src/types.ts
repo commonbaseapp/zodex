@@ -200,6 +200,8 @@ export type SzDefault<T> = { defaultValue: T };
 export type SzDescription = { description: string };
 export type SzReadonly = { readonly: boolean };
 
+export type SzRef = { $ref: string };
+
 // Conjunctions
 export type SzKey = SzString | SzNumber;
 export type SzDefaultOrNullable = SzDefault<any> | SzNullable;
@@ -225,7 +227,7 @@ export type SzType = (
     SzNullable & SzOptional & SzDefault<any> & SzDescription & SzReadonly
   >;
 
-export type SzUnionize<T extends SzType> =
+export type SzUnionize<T extends SzType | SzRef> =
   | T
   | (T extends SzArray<infer T>
       ? SzUnionize<T>

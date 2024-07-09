@@ -16,7 +16,7 @@
     "prepare": "husky install",
     "check-style": "prettier --check src",
     "lint": "eslint src/**",
-    "test": "vitest --coverage --silent=false",
+    "test": "vitest --coverage --silent=false --reporter=basic",
     "build": "rm -rf dist && pnpm tsc",
     "prepublish": "pnpm run build"
   },
