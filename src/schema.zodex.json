@@ -1,0 +1,618 @@
+{
+  "$defs": {
+    "reference-or-type": {
+      "type": "union",
+      "options": [
+        {
+          "$ref": "#/$defs/type"
+        },
+        {
+          "$ref": "#/$defs/reference"
+        }
+      ]
+    },
+    "reference": {
+      "description": "JSON Reference",
+      "type": "object",
+      "properties": {
+        "$ref": {
+          "type": "string"
+        }
+      }
+    },
+    "string": {
+      "type": "intersection",
+      "left": {
+        "description": "String basics",
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "literal",
+            "value": "string"
+          },
+          "coerce": { "type": "boolean", "isOptional": true },
+          "min": { "type": "number", "isOptional": true },
+          "max": { "type": "number", "isOptional": true },
+          "length": { "type": "number", "isOptional": true },
+          "startsWith": { "type": "string", "isOptional": true },
+          "endsWith": { "type": "string", "isOptional": true },
+
+          "toLowerCase": { "type": "boolean", "isOptional": true },
+          "toUpperCase": { "type": "boolean", "isOptional": true },
+          "trim": { "type": "boolean", "isOptional": true }
+        }
+      },
+      "right": {
+        "type": "intersection",
+        "left": {
+          "type": "union",
+          "options": [
+            {
+              "type": "object",
+              "properties": {}
+            },
+            {
+              "type": "object",
+              "description": "Includes",
+              "properties": {
+                "includes": { "type": "string" },
+                "position": { "type": "number", "isOptional": true }
+              }
+            }
+          ]
+        },
+        "right": {
+          "type": "union",
+          "options": [
+            {
+              "type": "object",
+              "properties": {}
+            },
+            {
+              "type": "object",
+              "description": "IP type",
+              "properties": {
+                "kind": {
+                  "type": "literal",
+                  "value": "ip"
+                },
+                "version": {
+                  "type": "enum",
+                  "values": ["v4", "v6"],
+                  "isOptional": true
+                }
+              }
+            },
+            {
+              "type": "object",
+              "description": "Regex",
+              "properties": {
+                "regex": { "type": "string" },
+                "flags": { "type": "string", "isOptional": true }
+              }
+            },
+            {
+              "type": "object",
+              "description": "Time",
+              "properties": {
+                "kind": {
+                  "type": "literal",
+                  "value": "time"
+                },
+                "precision": { "type": "number", "isOptional": true }
+              }
+            },
+            {
+              "type": "object",
+              "description": "Datetime",
+              "properties": {
+                "kind": {
+                  "type": "literal",
+                  "value": "datetime"
+                },
+                "offset": { "type": "boolean", "isOptional": true },
+                "local": { "type": "boolean", "isOptional": true },
+                "precision": { "type": "number", "isOptional": true }
+              }
+            },
+            {
+              "type": "object",
+              "description": "Kind",
+              "properties": {
+                "kind": {
+                  "type": "enum",
+                  "values": [
+                    "email",
+                    "url",
+                    "emoji",
+                    "uuid",
+                    "nanoid",
+                    "cuid",
+                    "cuid2",
+                    "ulid",
+                    "date",
+                    "duration",
+                    "base64"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "number": {
+      "description": "Number",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "literal",
+          "value": "number"
+        },
+        "coerce": { "type": "boolean", "isOptional": true },
+        "min": { "type": "number", "isOptional": true },
+        "max": { "type": "number", "isOptional": true },
+        "minInclusive": { "type": "boolean", "isOptional": true },
+        "maxInclusive": { "type": "boolean", "isOptional": true },
+        "multipleOf": { "type": "number", "isOptional": true },
+        "int": { "type": "boolean", "isOptional": true },
+        "finite": { "type": "boolean", "isOptional": true }
+      }
+    },
+    "symbol": {
+      "description": "Symbol",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "literal",
+          "value": "symbol"
+        }
+      }
+    },
+    "key": {
+      "description": "Key",
+      "type": "union",
+      "options": [
+        {
+          "$ref": "#/$defs/string"
+        },
+        {
+          "$ref": "#/$defs/number"
+        },
+        {
+          "$ref": "#/$defs/symbol"
+        }
+      ]
+    },
+    "tuple": {
+      "description": "Tuple",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "literal",
+          "value": "tuple"
+        },
+        "items": {
+          "type": "tuple",
+          "items": [
+            {
+              "$ref": "#/$defs/reference-or-type"
+            }
+          ],
+          "rest": {
+            "$ref": "#/$defs/reference-or-type"
+          }
+        },
+        "rest": {
+          "type": "union",
+          "options": [
+            {
+              "$ref": "#/$defs/reference-or-type"
+            }
+          ],
+          "isOptional": true
+        }
+      }
+    },
+    "type": {
+      "type": "intersection",
+      "left": {
+        "type": "union",
+        "options": [
+          {
+            "description": "Boolean",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "boolean"
+              },
+              "coerce": {
+                "type": "boolean",
+                "isOptional": true
+              }
+            }
+          },
+          {
+            "$ref": "#/$defs/number"
+          },
+          {
+            "description": "BigInt",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "bigInt"
+              },
+              "coerce": { "type": "boolean", "isOptional": true },
+              "min": { "type": "string", "isOptional": true },
+              "max": { "type": "string", "isOptional": true },
+              "minInclusive": { "type": "boolean", "isOptional": true },
+              "maxInclusive": { "type": "boolean", "isOptional": true },
+              "multipleOf": { "type": "string", "isOptional": true }
+            }
+          },
+          {
+            "$ref": "#/$defs/string"
+          },
+          {
+            "description": "Not a Number",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "nan"
+              }
+            }
+          },
+          {
+            "description": "Date",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "date"
+              },
+              "coerce": { "type": "boolean", "isOptional": true },
+              "min": { "type": "number", "isOptional": true },
+              "max": { "type": "number", "isOptional": true }
+            }
+          },
+          {
+            "description": "Undefined",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "undefined"
+              }
+            }
+          },
+          {
+            "description": "Null",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "null"
+              }
+            }
+          },
+          {
+            "description": "Any",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "any"
+              }
+            }
+          },
+          {
+            "description": "Unknown",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "unknown"
+              }
+            }
+          },
+          {
+            "description": "Never",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "never"
+              }
+            }
+          },
+          {
+            "description": "Void",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "void"
+              }
+            }
+          },
+          {
+            "$ref": "#/$defs/symbol"
+          },
+          {
+            "description": "Literal",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "literal"
+              },
+              "value": {
+                "type": "union",
+                "options": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "description": "Array",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "array"
+              },
+              "element": {
+                "$ref": "#/$defs/reference-or-type"
+              },
+              "minLength": { "type": "number", "isOptional": true },
+              "maxLength": { "type": "number", "isOptional": true }
+            }
+          },
+          {
+            "description": "Object",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "object"
+              },
+              "properties": {
+                "type": "record",
+                "key": { "type": "string" },
+                "value": {
+                  "$ref": "#/$defs/reference-or-type"
+                }
+              },
+              "unknownKeys": {
+                "type": "enum",
+                "values": ["strict", "strip", "passthrough"],
+                "isOptional": true
+              }
+            }
+          },
+          {
+            "description": "Union",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "union"
+              },
+              "options": {
+                "type": "tuple",
+                "items": [
+                  {
+                    "$ref": "#/$defs/reference-or-type"
+                  }
+                ],
+                "rest": {
+                  "$ref": "#/$defs/reference-or-type"
+                }
+              }
+            }
+          },
+          {
+            "description": "Discriminated Union",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "discriminatedUnion"
+              },
+              "discriminator": {
+                "type": "string"
+              },
+              "options": {
+                "type": "array",
+                "element": {
+                  "$ref": "#/$defs/reference-or-type"
+                }
+              }
+            }
+          },
+          {
+            "description": "Intersection",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "intersection"
+              },
+              "left": {
+                "$ref": "#/$defs/reference-or-type"
+              },
+              "right": {
+                "$ref": "#/$defs/reference-or-type"
+              }
+            }
+          },
+          {
+            "$ref": "#/$defs/tuple"
+          },
+          {
+            "description": "Record",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "record"
+              },
+              "key": {
+                "$ref": "#/$defs/key"
+              },
+              "value": {
+                "$ref": "#/$defs/reference-or-type"
+              }
+            }
+          },
+          {
+            "description": "Map",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "map"
+              },
+              "key": {
+                "type": "any"
+              },
+              "value": {
+                "$ref": "#/$defs/reference-or-type"
+              }
+            }
+          },
+          {
+            "description": "Set",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "set"
+              },
+              "value": {
+                "$ref": "#/$defs/reference-or-type"
+              },
+              "minSize": { "type": "number", "isOptional": true },
+              "maxSize": { "type": "number", "isOptional": true }
+            }
+          },
+          {
+            "description": "Function",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "function"
+              },
+              "args": {
+                "$ref": "#/$defs/tuple"
+              },
+              "returns": {
+                "$ref": "#/$defs/reference-or-type"
+              }
+            }
+          },
+          {
+            "description": "Enum",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "enum"
+              },
+              "values": {
+                "type": "tuple",
+                "items": [
+                  {
+                    "type": "string"
+                  }
+                ],
+                "rest": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "description": "Promise",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "promise"
+              },
+              "value": {
+                "$ref": "#/$defs/reference-or-type"
+              }
+            }
+          },
+          {
+            "description": "Effect",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "effect"
+              },
+              "effects": {
+                "type": "array",
+                "element": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "enum",
+                      "values": ["refinement", "transform", "preprocess"]
+                    }
+                  }
+                }
+              },
+              "inner": {
+                "$ref": "#/$defs/reference-or-type"
+              }
+            }
+          }
+        ]
+      },
+      "right": {
+        "description": "Modifiers",
+        "type": "object",
+        "properties": {
+          "isNullable": { "type": "boolean", "isOptional": true },
+          "isOptional": { "type": "boolean", "isOptional": true },
+          "defaultValue": {
+            "type": "union",
+            "options": [
+              {
+                "type": "any"
+              }
+            ],
+            "isOptional": true
+          },
+          "description": { "type": "string", "isOptional": true },
+          "readonly": { "type": "boolean", "isOptional": true }
+        }
+      }
+    }
+  },
+  "type": "union",
+  "options": [
+    {
+      "$ref": "#/$defs/type"
+    }
+  ]
+}

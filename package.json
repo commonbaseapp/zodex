@@ -17,7 +17,7 @@
     "check-style": "prettier --check src",
     "lint": "eslint src/**",
     "test": "vitest --coverage --silent=false --reporter=basic",
-    "build": "rm -rf dist && pnpm tsc",
+    "build": "rm -rf dist && pnpm tsc && cp src/schema.zodex.json dist/schema.zodex.json",
     "prepublish": "pnpm run build"
   },
   "peerDependencies": {
