@@ -112,11 +112,13 @@ export type SzArray<T extends SzType = SzType> = {
   maxLength?: number;
 };
 export type SzObject<
-  T extends Record<string, SzType> = Record<string, SzType>
+  T extends Record<string, SzType> = Record<string, SzType>,
+  U extends SzType = SzType
 > = {
   type: "object";
   properties: T;
   unknownKeys?: "strict" | "strip" | "passthrough";
+  catchall?: U;
 };
 
 export type SzUnion<Options extends [SzType, ...SzType[]] = [SzType]> = {
@@ -210,7 +212,7 @@ export type SzType = (
   | SzPrimitive
   | SzLiteral<any>
   | SzArray<any>
-  | SzObject<any>
+  | SzObject<any, any>
   | SzUnion<any>
   | SzDiscriminatedUnion<any, any>
   | SzIntersection<any, any>

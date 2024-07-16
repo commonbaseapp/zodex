@@ -370,6 +370,14 @@ const zerializers = {
 
   ZodObject: (def, opts) => ({
     type: "object",
+    ...(def.catchall._def.typeName === "ZodNever"
+      ? {}
+      : {
+          catchall: s(def.catchall, {
+            ...opts,
+            currentPath: [...opts.currentPath, "catchall"],
+          }),
+        }),
     ...(def.unknownKeys === "strip"
       ? {}
       : {
