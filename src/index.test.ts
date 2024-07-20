@@ -1,6 +1,7 @@
 import fs from "fs";
 import { expect, test } from "vitest";
 import { z } from "zod";
+import { SzCatch } from "./types";
 
 import { dezerialize, SzType, zerialize, Zerialize } from "./index";
 
@@ -65,8 +66,6 @@ test.each([
       type: "number",
     },
   }),
-  p(z.number().catch(42), { type: "number" }),
-
   p(z.string(), { type: "string" }),
 
   p(z.string().regex(/sth/), { type: "string", regex: "sth" }),
@@ -1524,4 +1523,84 @@ test("Nested recursion", () => {
 
   // const rezer = zerialize(dezer as any);
   // expect(rezer).toEqual(expectedShape);
+});
+
+test("catch", () => {
+  const schema = z.number().catch(42);
+
+  const expectedShape = {
+    type: "catch",
+    value: 42,
+    innerType: {
+      type: "number",
+    },
+  };
+
+  const serialized = zerialize(schema as any);
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized);
+  const rezer = zerialize(dezSchema as any);
+  expect(rezer).toEqual(expectedShape);
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.be.true;
+});
+
+test("catch (object)", () => {
+  const schema = z.object({}).catch({
+    abc: true,
+  });
+
+  const expectedShape = {
+    type: "catch",
+    value: {
+      abc: true,
+    },
+    innerType: {
+      type: "object",
+      properties: {},
+    },
+  };
+
+  const serialized = zerialize(schema as any);
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized);
+  const rezer = zerialize(dezSchema as any);
+  expect(rezer).toEqual(expectedShape);
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.be.true;
+});
+
+test("catch (function)", () => {
+  const schema = z.number({}).catch(() => {
+    return Math.random();
+  });
+
+  const expectedShape = {
+    type: "catch",
+    // value: 12345,
+    innerType: {
+      type: "number",
+    },
+  };
+
+  const serialized = zerialize(schema as any) as SzCatch;
+  expect(typeof serialized.value).to.equal("number");
+  expect({
+    ...serialized,
+    value: undefined,
+  }).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized);
+  const rezer = zerialize(dezSchema as any);
+  expect({
+    ...rezer,
+    value: undefined,
+  }).toEqual(expectedShape);
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.be.true;
 });

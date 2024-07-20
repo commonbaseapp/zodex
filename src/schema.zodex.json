@@ -594,6 +594,22 @@
                 "$ref": "#/$defs/reference-or-type"
               }
             }
+          },
+          {
+            "description": "Catch",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "catch"
+              },
+              "value": {
+                "type": "any"
+              },
+              "innerType": {
+                "$ref": "#/$defs/reference-or-type"
+              }
+            }
           }
         ]
       },

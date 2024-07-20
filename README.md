@@ -134,8 +134,10 @@ or target the whole object or individual properties.
 ## Caveats
 
 - `brand` is not supportable and omitted
-- `lazy`, `pipeline` and `catch` types are unwrapped
+- `lazy` and `pipeline` types are unwrapped
 - native enums are turned into `enum`s
+- `catch` with a function can have its then-value serialized but it
+  cannot then be deserialized back into using the original function
 - Due to technical limitations, we cannot support the regular
   `refine()`, `custom()` and `instanceof` methods (and they will be
   ignored), but these are really just implementations of `superRefine()`
