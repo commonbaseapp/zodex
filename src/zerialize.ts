@@ -167,7 +167,12 @@ const zerializers = {
   }),
   ZodDefault: (def, opts) => ({
     ...s(def.innerType, opts, true),
-    defaultValue: def.defaultValue(),
+    defaultValue:
+      def.innerType._def.typeName === "ZodBigInt"
+        ? String(def.defaultValue())
+        : def.innerType._def.typeName === "ZodDate"
+        ? (def.defaultValue() as Date).getTime()
+        : def.defaultValue(),
   }),
 
   ZodNumber: (def) => {
