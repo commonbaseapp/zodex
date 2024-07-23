@@ -549,7 +549,7 @@ const zerializers = {
       effects,
       inner: s(lastDef.schema, {
         ...opts,
-        currentPath: [...opts.currentPath, "schema"],
+        currentPath: [...opts.currentPath, "inner"],
       }),
     };
   },
