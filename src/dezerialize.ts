@@ -559,7 +559,13 @@ export function dezerializeRefs(
   if ("defaultValue" in shape) {
     const { defaultValue, ...rest } = shape;
     const inner = d(rest, opts);
-    const result = inner.default(defaultValue);
+    const result = inner.default(
+      shape.type === "bigInt"
+        ? BigInt(defaultValue)
+        : shape.type === "date"
+        ? new Date(defaultValue)
+        : defaultValue
+    );
     opts.pathToSchema.set(opts.path, result);
     return result;
   }

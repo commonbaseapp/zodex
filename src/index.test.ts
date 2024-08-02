@@ -143,7 +143,17 @@ test.each([
   p(z.string().optional(), { type: "string", isOptional: true }),
   p(z.string().nullable(), { type: "string", isNullable: true }),
 
+  p(
+    z.string().default(() => "foo"),
+    { type: "string", defaultValue: "foo" }
+  ),
   p(z.string().default("foo"), { type: "string", defaultValue: "foo" }),
+  p(z.bigint().default(123n), { type: "bigInt", defaultValue: "123" }),
+  p(z.boolean().default(true), { type: "boolean", defaultValue: true }),
+  p(z.date().default(new Date("1999-01-01")), {
+    type: "date",
+    defaultValue: new Date("1999-01-01").getTime(),
+  }),
   p(z.string().optional().default("foo"), {
     type: "string",
     isOptional: true,
