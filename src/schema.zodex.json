@@ -171,18 +171,24 @@
     },
     "key": {
       "description": "Key",
-      "type": "union",
-      "options": [
-        {
-          "$ref": "#/$defs/string"
-        },
-        {
-          "$ref": "#/$defs/number"
-        },
-        {
-          "$ref": "#/$defs/symbol"
-        }
-      ]
+      "type": "intersection",
+      "right": {
+        "type": "union",
+        "options": [
+          {
+            "$ref": "#/$defs/string"
+          },
+          {
+            "$ref": "#/$defs/number"
+          },
+          {
+            "$ref": "#/$defs/symbol"
+          }
+        ]
+      },
+      "left": {
+        "$ref": "#/$defs/modifiers"
+      }
     },
     "tuple": {
       "description": "Tuple",
@@ -212,6 +218,25 @@
           ],
           "isOptional": true
         }
+      }
+    },
+    "modifiers": {
+      "description": "Modifiers",
+      "type": "object",
+      "properties": {
+        "isNullable": { "type": "boolean", "isOptional": true },
+        "isOptional": { "type": "boolean", "isOptional": true },
+        "defaultValue": {
+          "type": "union",
+          "options": [
+            {
+              "type": "any"
+            }
+          ],
+          "isOptional": true
+        },
+        "description": { "type": "string", "isOptional": true },
+        "readonly": { "type": "boolean", "isOptional": true }
       }
     },
     "type": {
@@ -598,23 +623,7 @@
         ]
       },
       "right": {
-        "description": "Modifiers",
-        "type": "object",
-        "properties": {
-          "isNullable": { "type": "boolean", "isOptional": true },
-          "isOptional": { "type": "boolean", "isOptional": true },
-          "defaultValue": {
-            "type": "union",
-            "options": [
-              {
-                "type": "any"
-              }
-            ],
-            "isOptional": true
-          },
-          "description": { "type": "string", "isOptional": true },
-          "readonly": { "type": "boolean", "isOptional": true }
-        }
+        "$ref": "#/$defs/modifiers"
       }
     }
   },

@@ -204,8 +204,12 @@ export type SzReadonly = { readonly: boolean };
 
 export type SzRef = { $ref: string };
 
+export type SzExtras = Partial<
+  SzNullable & SzOptional & SzDefault<any> & SzDescription & SzReadonly
+>;
+
 // Conjunctions
-export type SzKey = SzString | SzNumber | SzSymbol;
+export type SzKey = (SzString | SzNumber | SzSymbol) & SzExtras;
 export type SzDefaultOrNullable = SzDefault<any> | SzNullable;
 
 export type SzType = (
@@ -225,9 +229,7 @@ export type SzType = (
   | SzPromise<any>
   | SzEffect<any>
 ) &
-  Partial<
-    SzNullable & SzOptional & SzDefault<any> & SzDescription & SzReadonly
-  >;
+  SzExtras;
 
 export type SzUnionize<T extends SzType | SzRef> =
   | T
