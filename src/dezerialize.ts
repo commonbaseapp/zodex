@@ -18,6 +18,7 @@ import {
   SzEnum,
   SzPromise,
   SzEffect,
+  SzCatch,
   SzType,
   SzString,
   SzNumber,
@@ -144,6 +145,8 @@ export type Dezerialize<T extends SzType | SzRef> = T extends SzRef
   ? z.ZodPromise<Dezerialize<Value>>
   : T extends SzEffect<infer Value>
   ? z.ZodEffects<Dezerialize<Value>>
+  : T extends SzCatch<infer Value>
+  ? z.ZodCatch<Dezerialize<Value>>
   : unknown;
 
 type DezerializersMap = {
@@ -487,6 +490,18 @@ const dezerializers = {
     );
     opts.pathToSchema.set(opts.path, i);
     return i;
+  }) as any,
+  catch: ((shape: SzCatch, opts: DezerializerOptions) => {
+    let base =
+      checkRef(shape.innerType, opts) ||
+      (d(shape.innerType, {
+        ...opts,
+        path: opts.path + "/innerType",
+      }) as any);
+
+    base = base.catch(shape.value);
+    opts.pathToSchema.set(opts.path, base);
+    return base;
   }) as any,
   effect: ((shape: SzEffect, opts: DezerializerOptions) => {
     let base =

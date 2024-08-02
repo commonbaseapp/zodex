@@ -186,6 +186,12 @@ export type SzPromise<T extends SzType = SzType> = {
   value: T;
 };
 
+export type SzCatch<T extends SzType = SzType> = {
+  type: "catch";
+  value: any;
+  innerType: T;
+};
+
 export type SzEffect<T extends SzType = SzType> = {
   type: "effect";
   effects: {
@@ -228,6 +234,7 @@ export type SzType = (
   | SzEnum<any>
   | SzPromise<any>
   | SzEffect<any>
+  | SzCatch<any>
 ) &
   SzExtras;
 

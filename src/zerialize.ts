@@ -18,6 +18,7 @@ import {
   SzPromise,
   SzNumber,
   SzEffect,
+  SzCatch,
   SzReadonly,
   SzPrimitive,
   SzType,
@@ -114,6 +115,8 @@ export type Zerialize<T extends ZodTypes> =
       : SzType
     : T extends z.ZodPromise<infer Value>
     ? SzPromise<Zerialize<Value>>
+    : T extends z.ZodCatch<infer T>
+    ? SzCatch<Zerialize<T>>
     : T extends z.ZodEffects<infer T>
     ? SzEffect<Zerialize<T>>
     : // Unserializable types, fallback to serializing inner type
@@ -555,7 +558,22 @@ const zerializers = {
   },
   ZodBranded: (def, opts) => s(def.type, opts),
   ZodPipeline: (def, opts) => s(def.out, opts),
-  ZodCatch: (def, opts) => s(def.innerType, opts),
+  ZodCatch: (def, opts) => {
+    const catchValue = def.catchValue({
+      // No errors to report, so just add an empty set
+      get error() {
+        return new z.ZodError([]);
+      },
+      // We don't have any input yet, so just provide `undefined`
+      input: undefined,
+    });
+
+    return {
+      type: "catch",
+      value: catchValue,
+      innerType: s(def.innerType, opts),
+    };
+  },
   ZodReadonly: (def, opts) => ({
     ...s(def.innerType, opts, true),
     readonly: true,
