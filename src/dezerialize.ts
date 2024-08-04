@@ -40,16 +40,19 @@ import { ZodTypes } from "./zod-types";
 
 type DezerializerOptions = {
   superRefinements?: {
-    [key: string]: (value: any, ctx: z.RefinementCtx) => Promise<void> | void;
+    [key: string]: (
+      value: unknown,
+      ctx: z.RefinementCtx
+    ) => Promise<void> | void;
   };
   transforms?: {
     [key: string]: (
-      value: any,
+      value: unknown,
       ctx: z.RefinementCtx
     ) => Promise<unknown> | unknown;
   };
   preprocesses?: {
-    [key: string]: (value: any, ctx: z.RefinementCtx) => unknown;
+    [key: string]: (value: unknown, ctx: z.RefinementCtx) => unknown;
   };
   path: string;
   pathToSchema: Map<string, ZodTypes>;
