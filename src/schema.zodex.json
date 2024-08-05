@@ -580,6 +580,49 @@
             }
           },
           {
+            "description": "Native enum",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "value": "nativeEnum"
+              },
+              "values": {
+                "type": "union",
+                "options": [
+                  {
+                    "description": "Numeric",
+                    "type": "record",
+                    "key": {
+                      "type": "number"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "description": "String",
+                    "type": "record",
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "union",
+                      "options": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
             "description": "Promise",
             "type": "object",
             "properties": {

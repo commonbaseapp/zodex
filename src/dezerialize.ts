@@ -16,6 +16,7 @@ import {
   SzSet,
   SzFunction,
   SzEnum,
+  SzNativeEnum,
   SzPromise,
   SzEffect,
   SzCatch,
@@ -147,6 +148,8 @@ export type Dezerialize<T extends SzType | SzRef> = T extends SzRef
   ? z.ZodEffects<Dezerialize<Value>>
   : T extends SzCatch<infer Value>
   ? z.ZodCatch<Dezerialize<Value>>
+  : T extends SzNativeEnum<infer Value>
+  ? z.ZodNativeEnum<Value>
   : unknown;
 
 type DezerializersMap = {
@@ -410,6 +413,8 @@ const dezerializers = {
     opts.pathToSchema.set(opts.path, i);
     return i;
   }) as any,
+
+  nativeEnum: ((shape: SzNativeEnum) => z.nativeEnum(shape.values)) as any,
 
   enum: ((shape: SzEnum) => z.enum(shape.values)) as any,
 

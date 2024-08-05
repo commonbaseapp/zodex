@@ -21,6 +21,7 @@ const p = <
 enum Fruits {
   Apple,
   Banana,
+  Cherries = "Cherries",
 }
 
 const baseCategorySchema = z.object({
@@ -46,7 +47,16 @@ test.each([
   p(z.unknown(), { type: "unknown" }),
   p(z.never(), { type: "never" }),
   p(z.void(), { type: "void" }),
-  p(z.nativeEnum(Fruits), { type: "unknown" }),
+  p(z.nativeEnum(Fruits), {
+    type: "nativeEnum",
+    values: {
+      0: "Apple",
+      1: "Banana",
+      Apple: 0,
+      Banana: 1,
+      Cherries: "Cherries",
+    },
+  }),
   p(z.object({ name: z.string() }).brand<"Cat">(), {
     type: "object",
     properties: {

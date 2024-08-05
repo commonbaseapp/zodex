@@ -135,7 +135,6 @@ or target the whole object or individual properties.
 
 - `brand` is not supportable and omitted
 - `lazy` and `pipeline` types are unwrapped
-- native enums are turned into `enum`s
 - `catch` with a function can have its then-value serialized but it
   cannot then be deserialized back into using the original function
 - Due to technical limitations, we cannot support the regular
