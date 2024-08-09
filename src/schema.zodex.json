@@ -270,11 +270,26 @@
                 "value": "bigInt"
               },
               "coerce": { "type": "boolean", "isOptional": true },
-              "min": { "type": "string", "isOptional": true },
-              "max": { "type": "string", "isOptional": true },
+              "min": {
+                "type": "string",
+                "regex": "^-?[0-9]{1,}$",
+                "flags": "u",
+                "isOptional": true
+              },
+              "max": {
+                "type": "string",
+                "regex": "^-?[0-9]{1,}$",
+                "flags": "u",
+                "isOptional": true
+              },
               "minInclusive": { "type": "boolean", "isOptional": true },
               "maxInclusive": { "type": "boolean", "isOptional": true },
-              "multipleOf": { "type": "string", "isOptional": true }
+              "multipleOf": {
+                "type": "string",
+                "regex": "^-?[0-9]{1,}$",
+                "flags": "u",
+                "isOptional": true
+              }
             }
           },
           {
