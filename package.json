@@ -13,9 +13,9 @@
   "author": "Gregor Weber<mail@dflate.io>",
   "license": "MIT",
   "scripts": {
-    "prepare": "husky install",
+    "prepare": "husky",
     "check-style": "prettier --check src",
-    "lint": "eslint src/**",
+    "lint": "eslint --no-warn-ignored .",
     "test": "vitest --coverage --silent=false --reporter=basic",
     "build": "rm -rf dist && pnpm tsc && cp src/schema.zodex.json dist/schema.zodex.json",
     "prepublish": "pnpm run build"
@@ -27,26 +27,33 @@
   },
   "dependencies": {
     "react": "^18.3.1",
-    "type-fest": "^4.20.1",
+    "type-fest": "^4.26.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@commitlint/cli": "19.3.0",
-    "@commitlint/config-conventional": "19.2.2",
-    "@types/react": "18.3.3",
-    "@typescript-eslint/eslint-plugin": "6.x",
-    "@typescript-eslint/parser": "6.x",
-    "@vitest/coverage-v8": "^1.6.0",
-    "esbuild": "0.21.5",
-    "eslint": "8.56.0",
-    "eslint-config-prettier": "8.8.0",
-    "husky": "9.0.11",
-    "lint-staged": "15.2.7",
+    "@commitlint/cli": "19.4.1",
+    "@commitlint/config-conventional": "19.4.1",
+    "@types/react": "18.3.5",
+    "@vitest/coverage-v8": "^2.0.5",
+    "esbuild": "0.23.1",
+    "eslint": "9.9.1",
+    "eslint-config-prettier": "9.1.0",
+    "globals": "^15.9.0",
+    "husky": "9.1.5",
+    "lint-staged": "15.2.10",
     "prettier": "2.8.8",
-    "typescript": "5.3.x",
-    "vitest": "1.6.0"
+    "typescript": "5.5.4",
+    "typescript-eslint": "8.4.0",
+    "vitest": "2.0.5"
   },
-  "packageManager": "pnpm@9.1.4",
+  "packageManager": "pnpm@9.9.0",
+  "pnpm": {
+    "updateConfig": {
+      "ignoreDependencies": [
+        "prettier"
+      ]
+    }
+  },
   "files": [
     "dist/*"
   ],

@@ -52,7 +52,9 @@ export type SzInfer<T extends SzType> =
       : T extends SzArray<infer T>
       ? SzInfer<T>[]
       : T extends SzObject<infer Properties>
-      ? { [Key in RequiredKeys<Properties>]: SzInfer<Properties[Key]> } & {
+      ? {
+          [Key in RequiredKeys<Properties>]: SzInfer<Properties[Key]>;
+        } & {
           [Key in OptionalKeys<Properties>]?: SzInfer<Properties[Key]>;
         }
       : T extends SzUnion<infer Options>

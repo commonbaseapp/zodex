@@ -447,7 +447,7 @@ test.each([
   expect(zer).toEqual(shape);
   expect(zerialize(dezerialize(shape) as any)).toEqual(zerialize(schema));
   const parsed = zodexSchema.safeParse(shape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test.each([
@@ -460,7 +460,7 @@ test.each([
   }),
 ])("isOptional/isNullable/readonly", (schema, shape) => {
   const parsed = zodexSchema.safeParse(shape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
   expect(zerialize(dezerialize(shape) as any)).toEqual(zerialize(schema));
 });
 
@@ -531,7 +531,7 @@ test("discriminated union", () => {
   });
 
   const parsed = zodexSchema.safeParse(shape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("coerce (number)", () => {
@@ -545,7 +545,7 @@ test("coerce (number)", () => {
   expect(dezerialize(shape as SzType).parse("42")).toEqual(42);
 
   const parsed = zodexSchema.safeParse(shape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("coerce (bigint)", () => {
@@ -559,7 +559,7 @@ test("coerce (bigint)", () => {
   expect(dezerialize(shape as SzType).parse("42")).toEqual(42n);
 
   const parsed = zodexSchema.safeParse(shape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("coerce (date)", () => {
@@ -574,7 +574,7 @@ test("coerce (date)", () => {
     new Date("1999-01-01")
   );
   const parsed = zodexSchema.safeParse(shape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("coerce (string)", () => {
@@ -588,7 +588,7 @@ test("coerce (string)", () => {
   expect(dezerialize(shape as SzType).parse(42)).toEqual("42");
 
   const parsed = zodexSchema.safeParse(shape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("coerce (boolean)", () => {
@@ -601,7 +601,7 @@ test("coerce (boolean)", () => {
   });
   expect(dezerialize(shape as SzType).parse(0)).toEqual(false);
   const parsed = zodexSchema.safeParse(shape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("named superrefinements and transforms", () => {
@@ -639,6 +639,7 @@ test("named superrefinements and transforms", () => {
         });
       }
     },
+    /* c8 ignore next -- Unused */
     BCE: (arg: Date) => arg < new Date("0001-01-01"),
   };
 
@@ -677,28 +678,28 @@ test("named superrefinements and transforms", () => {
     new Date(new Date().getTime() + 10000000)
   ) as z.SafeParseError<Date>;
 
-  expect(res1.success).to.be.false;
+  expect(res1.success).to.equal(false);
 
   const res2 = dezSchema.safeParse(
     new Date("1969-01-01")
   ) as z.SafeParseError<Date>;
 
-  expect(res2.success).to.be.false;
+  expect(res2.success).to.equal(false);
 
   const res3 = dezSchema.safeParse(
     new Date("2050-01-01")
   ) as z.SafeParseError<Date>;
 
-  expect(res3.success).to.be.false;
+  expect(res3.success).to.equal(false);
 
   const res4 = dezSchema.safeParse(new Date()) as z.SafeParseSuccess<Date>;
 
-  expect(res4.success).to.be.true;
+  expect(res4.success).to.equal(true);
   // Will be transformed down
   expect(res4.data.getTime()).toBeLessThan(new Date().getTime());
 
   const parsed = zodexSchema.safeParse(expectedShape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("preprocess", () => {
@@ -722,15 +723,16 @@ test("preprocess", () => {
   const dezSchema = dezerialize(serialized, { preprocesses });
   const res1 = dezSchema.safeParse(500) as z.SafeParseSuccess<Date>;
 
-  expect(res1.success).to.be.true;
+  expect(res1.success).to.equal(true);
   expect(res1.data).to.be.equal(1500);
 
   const parsed = zodexSchema.safeParse(expectedShape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("dezerialize effects without options", () => {
   const superRefinements = {
+    /* c8 ignore next 11 -- Unused */
     "not in future": (d: Date, ctx: z.RefinementCtx) => {
       if (d > new Date()) {
         ctx.addIssue({
@@ -762,10 +764,10 @@ test("dezerialize effects without options", () => {
     new Date(new Date().getTime() + 10000000)
   ) as z.SafeParseSuccess<Date>;
 
-  expect(res1.success).to.be.true;
+  expect(res1.success).to.equal(true);
 
   const parsed = zodexSchema.safeParse(expectedShape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("describe", () => {
@@ -785,10 +787,10 @@ test("describe", () => {
     new Date(new Date().getTime() + 10000000)
   ) as z.SafeParseSuccess<Date>;
 
-  expect(res1.success).to.be.true;
+  expect(res1.success).to.equal(true);
 
   const parsed = zodexSchema.safeParse(expectedShape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("recursive schemas (nested)", () => {
@@ -840,7 +842,7 @@ test("recursive schemas (nested)", () => {
   expect(reserialized).toEqual(expectedShape);
 
   const parsed = zodexSchema.safeParse(expectedShape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("recursive schemas", () => {
@@ -894,7 +896,7 @@ test("recursive schemas", () => {
   expect(reserialized).toEqual(expectedShape);
 
   const parsed = zodexSchema.safeParse(expectedShape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("recursive tuple schema", () => {
@@ -943,7 +945,7 @@ test("recursive tuple schema", () => {
   expect(reserialized).toEqual(expectedShape);
 
   const parsed = zodexSchema.safeParse(expectedShape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("Object with inner $ref", () => {
@@ -1002,9 +1004,10 @@ test("Object with inner $ref", () => {
     zerialize(schema)
   );
   const parsed = zodexSchema.safeParse(shape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
+/* c8 ignore next 193 */
 test.skip("Large object with inner $ref", () => {
   const schema = z.tuple([
     z.string(),
@@ -1196,7 +1199,7 @@ test.skip("Large object with inner $ref", () => {
     zerialize(schema)
   );
   const parsed = zodexSchema.safeParse(shape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("Nested recursion", () => {
@@ -1564,7 +1567,7 @@ test("catch", () => {
   expect(rezer).toEqual(expectedShape);
 
   const parsed = zodexSchema.safeParse(expectedShape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("catch (object)", () => {
@@ -1591,7 +1594,7 @@ test("catch (object)", () => {
   expect(rezer).toEqual(expectedShape);
 
   const parsed = zodexSchema.safeParse(expectedShape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
 
 test("catch (function)", () => {
@@ -1622,5 +1625,5 @@ test("catch (function)", () => {
   }).toEqual(expectedShape);
 
   const parsed = zodexSchema.safeParse(expectedShape);
-  expect(parsed.success).to.be.true;
+  expect(parsed.success).to.equal(true);
 });
