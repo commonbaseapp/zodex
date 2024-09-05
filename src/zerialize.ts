@@ -564,8 +564,8 @@ const zerializers = {
   ZodCatch: (def, opts) => {
     const catchValue = def.catchValue({
       // No errors to report, so just add an empty set
+      /* c8 ignore next 3 -- Unused */
       get error() {
-        /* c8 ignore next 2 -- Unused */
         return new z.ZodError([]);
       },
       // We don't have any input yet, so just provide `undefined`
