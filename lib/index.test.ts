@@ -6,7 +6,7 @@ import { SzCatch } from "./types";
 import { dezerialize, SzType, zerialize, Zerialize } from "./index";
 
 const zodexSchemaJSON = JSON.parse(
-  fs.readFileSync("./src/schema.zodex.json", "utf-8")
+  fs.readFileSync("./schema.zodex.json", "utf-8")
 );
 const zodexSchema = dezerialize(zodexSchemaJSON);
 
