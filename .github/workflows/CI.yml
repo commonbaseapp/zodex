@@ -7,6 +7,10 @@ on:
     branches:
       - "**"
 
+defaults:
+  run:
+    working-directory: lib
+
 jobs:
   check-style:
     runs-on: ubuntu-latest
@@ -39,9 +43,6 @@ jobs:
   release:
     needs: [check-style, lint, test, build]
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: lib
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
