@@ -1,46 +1,25 @@
 {
-  "name": "zodex",
-  "version": "0.0.0-dev",
-  "description": "Type-safe (de)serialization for Zod",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "keywords": [
-    "zod",
-    "serialization",
-    "deserialization",
-    "reflection"
-  ],
-  "author": "Gregor Weber<mail@dflate.io>",
+  "name": "zodex-workspace",
+  "author": "Gregor Weber<mail@watwa.re>",
   "license": "MIT",
   "scripts": {
     "prepare": "husky",
     "check-style": "prettier --check src",
-    "lint": "eslint --no-warn-ignored .",
-    "test": "vitest --coverage --silent=false --reporter=basic",
-    "build": "rm -rf dist && pnpm tsc && cp src/schema.zodex.json dist/schema.zodex.json",
-    "prepublish": "pnpm run build"
-  },
-  "peerDependencies": {
-    "zod": "^3.x"
-  },
-  "dependencies": {
-    "type-fest": "^4.26.0",
-    "zod": "^3.23.8"
+    "lint": "eslint --no-warn-ignored ."
   },
   "devDependencies": {
     "@commitlint/cli": "19.4.1",
     "@commitlint/config-conventional": "19.4.1",
-    "@vitest/coverage-v8": "^2.0.5",
-    "esbuild": "0.23.1",
     "eslint": "9.9.1",
     "eslint-config-prettier": "9.1.0",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
     "husky": "9.1.5",
     "lint-staged": "15.2.10",
     "prettier": "2.8.8",
     "typescript": "5.5.4",
-    "typescript-eslint": "8.4.0",
-    "vitest": "2.0.5"
+    "typescript-eslint": "8.4.0"
   },
   "packageManager": "pnpm@9.9.0",
   "pnpm": {
@@ -50,11 +29,8 @@
       ]
     }
   },
-  "files": [
-    "dist/*"
-  ],
   "lint-staged": {
-    "*.ts": "eslint --cache --fix src/**",
+    "*.ts": "eslint --cache --fix .",
     "*.{ts,js,json,md}": "prettier --write"
   }
 }

@@ -1,0 +1,30 @@
+html {
+  font-family: sans-serif;
+}
+
+.app {
+  margin: 0 auto;
+  max-width: 940px;
+}
+
+.playground {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  color: #6b7280;
+}
+
+textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  padding: 4px;
+}
+
+pre {
+  border: 1px solid #d1d5db;
+  padding: 4px;
+  color: #6b7280;
+}
