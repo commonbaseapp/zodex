@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "prepare": "husky",
-    "check-style": "prettier --check src",
+    "check-style": "prettier --check .",
     "lint": "eslint --no-warn-ignored ."
   },
   "devDependencies": {
