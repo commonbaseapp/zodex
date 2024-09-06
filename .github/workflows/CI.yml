@@ -24,6 +24,9 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lib
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node
@@ -31,6 +34,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lib
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node
@@ -39,6 +45,9 @@ jobs:
   release:
     needs: [check-style, lint, test, build]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lib
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
