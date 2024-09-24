@@ -2,6 +2,7 @@
   "name": "zodex",
   "version": "0.0.0-dev",
   "description": "Type-safe (de)serialization for Zod",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "keywords": [

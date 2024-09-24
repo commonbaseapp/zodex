@@ -2,6 +2,7 @@
   "name": "zodex-workspace",
   "author": "Gregor Weber<mail@watwa.re>",
   "license": "MIT",
+  "type": "module",
   "scripts": {
     "prepare": "husky",
     "check-style": "prettier --check .",
