@@ -13,12 +13,6 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   eslintConfigPrettier,
   {
-    files: ["*.cjs"],
-    languageOptions: {
-      globals: globals.node,
-    },
-  },
-  {
     files: ["demo/**/*.js"],
     languageOptions: {
       globals: {
