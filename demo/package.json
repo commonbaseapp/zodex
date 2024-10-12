@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build-lib": "cd ../lib && pnpm build",
-    "build": "pnpm build-lib && tsc -b && vite build",
-    "preview": "vite preview"
+    "build": "pnpm build-lib && tsc -b && nx vite:build",
+    "preview": "nx vite:preview"
   },
   "dependencies": {
     "react": "^18.3.1",

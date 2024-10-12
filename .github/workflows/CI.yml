@@ -43,24 +43,18 @@ jobs:
       - run: pnpm build
 
   release:
-    needs: [check-style, lint, test, build]
+    # needs: [check-style, lint, test, build]
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: lib
-    if: github.ref == 'refs/heads/main'
+    # if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/node
         with:
           node-version: 18.x
-      - uses: go-semantic-release/action@v1
-        id: semrel
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          update-file: package.json
-          allow-initial-development-versions: true
-      - run: pnpm publish --no-git-checks
-        if: steps.semrel.outputs.version != ''
+      - run: pnpm exec nx reset
+      - run: pnpm exec nx run my-app:semantic-release --dry-run
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

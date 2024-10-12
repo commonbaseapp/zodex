@@ -14,7 +14,7 @@
   "author": "Gregor Weber<mail@watwa.re>",
   "license": "MIT",
   "scripts": {
-    "test": "vitest --coverage --silent=false --reporter=basic",
+    "test": "nx vite:test --coverage --silent=false --reporter=basic",
     "build": "rm -rf dist && pnpm tsc && cp schema.zodex.json dist/schema.zodex.json && tsup index.ts --format esm --legacy-output",
     "prepublish": "pnpm run build"
   },
@@ -34,5 +34,18 @@
   },
   "files": [
     "dist/*"
-  ]
+  ],
+  "nx": {
+    "targets": {
+      "semantic-release": {
+        "executor": "@theunderscorer/nx-semantic-release:semantic-release",
+        "options": {
+          "github": true,
+          "changelog": true,
+          "npm": true,
+          "tagFormat": "v${VERSION}"
+        }
+      }
+    }
+  }
 }
