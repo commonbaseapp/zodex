@@ -33,6 +33,7 @@ export const STRING_KINDS = new Set([
   "date",
   "duration",
   "base64",
+  "base64url",
 ] as const);
 
 export type SzString = {
@@ -56,6 +57,7 @@ export type SzString = {
   (
     | object
     | { kind: "ip"; version?: "v4" | "v6" }
+    | { kind: "cidr"; version?: "v4" | "v6" }
     | { regex: string; flags?: string }
     | {
         kind: "time";
@@ -130,7 +132,7 @@ export type SzDiscriminatedUnionOption<Discriminator extends string> = {
 } & SzType;
 export type SzDiscriminatedUnion<
   Discriminator extends string = string,
-  Options extends SzDiscriminatedUnionOption<Discriminator>[] = []
+  Options extends readonly SzDiscriminatedUnionOption<Discriminator>[] = []
 > = {
   type: "discriminatedUnion";
   discriminator: Discriminator;

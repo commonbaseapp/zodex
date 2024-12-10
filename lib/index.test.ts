@@ -123,11 +123,18 @@ test.each([
 
   p(z.string().date(), { type: "string", kind: "date" }),
   p(z.string().duration(), { type: "string", kind: "duration" }),
+  p(z.string().cidr(), { type: "string", kind: "cidr" }),
   p(z.string().base64(), { type: "string", kind: "base64" }),
+  p(z.string().base64url(), { type: "string", kind: "base64url" }),
 
   p(z.string().ip({ version: "v4" }), {
     type: "string",
     kind: "ip",
+    version: "v4",
+  }),
+  p(z.string().cidr({ version: "v4" }), {
+    type: "string",
+    kind: "cidr",
     version: "v4",
   }),
 
