@@ -239,6 +239,8 @@ const zerializers = {
             }
           : check.kind == "ip"
           ? { kind: "ip", version: check.version }
+          : check.kind == "cidr"
+          ? { kind: "cidr", version: check.version }
           : check.kind == "time"
           ? {
               kind: "time",

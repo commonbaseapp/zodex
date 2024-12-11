@@ -85,6 +85,21 @@
             },
             {
               "type": "object",
+              "description": "CIDR type",
+              "properties": {
+                "kind": {
+                  "type": "literal",
+                  "value": "cidr"
+                },
+                "version": {
+                  "type": "enum",
+                  "values": ["v4", "v6"],
+                  "isOptional": true
+                }
+              }
+            },
+            {
+              "type": "object",
               "description": "Regex",
               "properties": {
                 "regex": { "type": "string" },
@@ -132,7 +147,8 @@
                     "ulid",
                     "date",
                     "duration",
-                    "base64"
+                    "base64",
+                    "base64url"
                   ]
                 }
               }

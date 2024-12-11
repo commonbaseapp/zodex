@@ -228,6 +228,8 @@ const dezerializers = {
     if ("kind" in shape) {
       if (shape.kind == "ip") {
         s = s.ip({ version: shape.version });
+      } else if (shape.kind == "cidr") {
+        s = s.cidr({ version: shape.version });
       } else if (shape.kind == "datetime") {
         s = s.datetime({
           offset: shape.offset,
