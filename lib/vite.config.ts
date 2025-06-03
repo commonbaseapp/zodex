@@ -14,5 +14,13 @@ export default defineConfig({
         "zod-types.ts",
       ],
     },
+    reporters: [
+      [
+        "default",
+        {
+          summary: false
+        }
+      ]
+    ],
   },
 });

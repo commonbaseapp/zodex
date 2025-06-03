@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 type Modifiers =
   | z.ZodOptional<ZodTypes>
@@ -8,11 +8,16 @@ type Modifiers =
 
 type Primitives =
   | z.ZodString
+  | z.ZodCoercedString
   | z.ZodNumber
+  | z.ZodCoercedNumber
   | z.ZodNaN
   | z.ZodBigInt
+  | z.ZodCoercedBigInt
   | z.ZodBoolean
+  | z.ZodCoercedBoolean
   | z.ZodDate
+  | z.ZodCoercedDate
   | z.ZodUndefined
   | z.ZodNull
   | z.ZodAny
@@ -33,9 +38,8 @@ type KVCollections =
 
 type ADTs =
   | z.ZodUnion<readonly [ZodTypes, ...ZodTypes[]]>
-  | z.ZodDiscriminatedUnion<any, z.ZodObject<{ [k: string]: ZodTypes }>[]>
+  | z.ZodDiscriminatedUnion<z.ZodObject<{ [k: string]: ZodTypes }>[]>
   | z.ZodIntersection<ZodTypes, ZodTypes>
-  | z.ZodNativeEnum<any>
   | z.ZodEnum<any>;
 
 export type ZodTypes =
@@ -44,13 +48,11 @@ export type ZodTypes =
   | ListCollections
   | KVCollections
   | ADTs
-  | z.ZodFunction<any, ZodTypes>
   | z.ZodLazy<ZodTypes>
   | z.ZodLiteral<any>
-  | z.ZodEffects<any, any>
   | z.ZodCatch<ZodTypes>
   | z.ZodPromise<ZodTypes>
-  | z.ZodBranded<ZodTypes, any>
-  | z.ZodPipeline<ZodTypes, ZodTypes>;
+  | z.ZodPipe<ZodTypes, ZodTypes>
+  | z.ZodTransform<unknown, unknown>;
 
-export type ZTypeName<T extends ZodTypes> = T["_def"]["typeName"];
+export type ZTypeName<T extends ZodTypes> = T["def"]["type"];

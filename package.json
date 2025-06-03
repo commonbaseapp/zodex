@@ -22,7 +22,7 @@
     "typescript": "5.5.4",
     "typescript-eslint": "8.4.0"
   },
-  "packageManager": "pnpm@9.9.0",
+  "packageManager": "pnpm@10.12.1",
   "pnpm": {
     "updateConfig": {
       "ignoreDependencies": [

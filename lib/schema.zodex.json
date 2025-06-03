@@ -28,7 +28,7 @@
         "properties": {
           "type": {
             "type": "literal",
-            "value": "string"
+            "values": ["string"]
           },
           "coerce": { "type": "boolean", "isOptional": true },
           "min": { "type": "number", "isOptional": true },
@@ -74,11 +74,14 @@
               "properties": {
                 "kind": {
                   "type": "literal",
-                  "value": "ip"
+                  "values": ["ip"]
                 },
                 "version": {
                   "type": "enum",
-                  "values": ["v4", "v6"],
+                  "values": {
+                    "v4": "v4",
+                    "v6": "v6"
+                  },
                   "isOptional": true
                 }
               }
@@ -89,12 +92,14 @@
               "properties": {
                 "kind": {
                   "type": "literal",
-                  "value": "cidr"
+                  "values": ["cidr"]
                 },
                 "version": {
                   "type": "enum",
-                  "values": ["v4", "v6"],
-                  "isOptional": true
+                  "values": {
+                    "v4": "v4",
+                    "v6": "v6"
+                  }
                 }
               }
             },
@@ -112,7 +117,7 @@
               "properties": {
                 "kind": {
                   "type": "literal",
-                  "value": "time"
+                  "values": ["time"]
                 },
                 "precision": { "type": "number", "isOptional": true }
               }
@@ -123,7 +128,7 @@
               "properties": {
                 "kind": {
                   "type": "literal",
-                  "value": "datetime"
+                  "values": ["datetime"]
                 },
                 "offset": { "type": "boolean", "isOptional": true },
                 "local": { "type": "boolean", "isOptional": true },
@@ -136,20 +141,21 @@
               "properties": {
                 "kind": {
                   "type": "enum",
-                  "values": [
-                    "email",
-                    "url",
-                    "emoji",
-                    "uuid",
-                    "nanoid",
-                    "cuid",
-                    "cuid2",
-                    "ulid",
-                    "date",
-                    "duration",
-                    "base64",
-                    "base64url"
-                  ]
+                  "values": {
+                    "jwt": "jwt",
+                    "email": "email",
+                    "url": "url",
+                    "emoji": "emoji",
+                    "uuid": "uuid",
+                    "nanoid": "nanoid",
+                    "cuid": "cuid",
+                    "cuid2": "cuid2",
+                    "ulid": "ulid",
+                    "date": "date",
+                    "duration": "duration",
+                    "base64": "base64",
+                    "base64url": "base64url"
+                  }
                 }
               }
             }
@@ -163,16 +169,26 @@
       "properties": {
         "type": {
           "type": "literal",
-          "value": "number"
+          "values": ["number"]
         },
         "coerce": { "type": "boolean", "isOptional": true },
+        "format": {
+          "type": "enum",
+          "values": {
+            "int32": "int32",
+            "uint32": "uint32",
+            "float32": "float32",
+            "float64": "float64",
+            "safeint": "safeint"
+          },
+          "isOptional": true
+        },
         "min": { "type": "number", "isOptional": true },
         "max": { "type": "number", "isOptional": true },
         "minInclusive": { "type": "boolean", "isOptional": true },
         "maxInclusive": { "type": "boolean", "isOptional": true },
         "multipleOf": { "type": "number", "isOptional": true },
-        "int": { "type": "boolean", "isOptional": true },
-        "finite": { "type": "boolean", "isOptional": true }
+        "int": { "type": "boolean", "isOptional": true }
       }
     },
     "symbol": {
@@ -181,7 +197,7 @@
       "properties": {
         "type": {
           "type": "literal",
-          "value": "symbol"
+          "values": ["symbol"]
         }
       }
     },
@@ -212,16 +228,11 @@
       "properties": {
         "type": {
           "type": "literal",
-          "value": "tuple"
+          "values": ["tuple"]
         },
         "items": {
-          "type": "tuple",
-          "items": [
-            {
-              "$ref": "#/$defs/reference-or-type"
-            }
-          ],
-          "rest": {
+          "type": "array",
+          "element": {
             "$ref": "#/$defs/reference-or-type"
           }
         },
@@ -240,6 +251,18 @@
       "description": "Modifiers",
       "type": "object",
       "properties": {
+        "checks": {
+          "type": "array",
+          "element": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "isOptional": true
+        },
         "isNullable": { "type": "boolean", "isOptional": true },
         "isOptional": { "type": "boolean", "isOptional": true },
         "defaultValue": {
@@ -266,7 +289,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "boolean"
+                "values": ["boolean"]
               },
               "coerce": {
                 "type": "boolean",
@@ -283,9 +306,17 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "bigInt"
+                "values": ["bigInt"]
               },
               "coerce": { "type": "boolean", "isOptional": true },
+              "format": {
+                "type": "enum",
+                "values": {
+                  "uint64": "uint64",
+                  "int64": "int64"
+                },
+                "isOptional": true
+              },
               "min": {
                 "type": "string",
                 "regex": "^-?[0-9]{1,}$",
@@ -317,7 +348,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "nan"
+                "values": ["nan"]
               }
             }
           },
@@ -327,7 +358,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "date"
+                "values": ["date"]
               },
               "coerce": { "type": "boolean", "isOptional": true },
               "min": { "type": "number", "isOptional": true },
@@ -340,7 +371,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "undefined"
+                "values": ["undefined"]
               }
             }
           },
@@ -350,7 +381,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "null"
+                "values": ["null"]
               }
             }
           },
@@ -360,7 +391,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "any"
+                "values": ["any"]
               }
             }
           },
@@ -370,7 +401,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "unknown"
+                "values": ["unknown"]
               }
             }
           },
@@ -380,7 +411,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "never"
+                "values": ["never"]
               }
             }
           },
@@ -390,7 +421,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "void"
+                "values": ["void"]
               }
             }
           },
@@ -403,21 +434,24 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "literal"
+                "values": ["literal"]
               },
-              "value": {
-                "type": "union",
-                "options": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "string"
-                  }
-                ]
+              "values": {
+                "type": "array",
+                "element": {
+                  "type": "union",
+                  "options": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
               }
             }
           },
@@ -427,7 +461,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "array"
+                "values": ["array"]
               },
               "element": {
                 "$ref": "#/$defs/reference-or-type"
@@ -442,7 +476,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "object"
+                "values": ["object"]
               },
               "properties": {
                 "type": "record",
@@ -459,11 +493,6 @@
                   }
                 ],
                 "isOptional": true
-              },
-              "unknownKeys": {
-                "type": "enum",
-                "values": ["strict", "strip", "passthrough"],
-                "isOptional": true
               }
             }
           },
@@ -473,16 +502,11 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "union"
+                "values": ["union"]
               },
               "options": {
-                "type": "tuple",
-                "items": [
-                  {
-                    "$ref": "#/$defs/reference-or-type"
-                  }
-                ],
-                "rest": {
+                "type": "array",
+                "element": {
                   "$ref": "#/$defs/reference-or-type"
                 }
               }
@@ -494,7 +518,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "discriminatedUnion"
+                "values": ["discriminatedUnion"]
               },
               "discriminator": {
                 "type": "string"
@@ -513,7 +537,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "intersection"
+                "values": ["intersection"]
               },
               "left": {
                 "$ref": "#/$defs/reference-or-type"
@@ -532,7 +556,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "record"
+                "values": ["record"]
               },
               "key": {
                 "$ref": "#/$defs/key"
@@ -548,7 +572,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "map"
+                "values": ["map"]
               },
               "key": {
                 "type": "any"
@@ -564,7 +588,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "set"
+                "values": ["set"]
               },
               "value": {
                 "$ref": "#/$defs/reference-or-type"
@@ -574,82 +598,37 @@
             }
           },
           {
-            "description": "Function",
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "literal",
-                "value": "function"
-              },
-              "args": {
-                "$ref": "#/$defs/tuple"
-              },
-              "returns": {
-                "$ref": "#/$defs/reference-or-type"
-              }
-            }
-          },
-          {
             "description": "Enum",
             "type": "object",
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "enum"
+                "values": ["enum"]
               },
               "values": {
-                "type": "tuple",
-                "items": [
-                  {
-                    "type": "string"
-                  }
-                ],
-                "rest": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          {
-            "description": "Native enum",
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "literal",
-                "value": "nativeEnum"
-              },
-              "values": {
-                "type": "union",
-                "options": [
-                  {
-                    "description": "Numeric",
-                    "type": "record",
-                    "key": {
+                "type": "record",
+                "key": {
+                  "type": "union",
+                  "options": [
+                    {
+                      "type": "string"
+                    },
+                    {
                       "type": "number"
-                    },
-                    "value": {
-                      "type": "string"
                     }
-                  },
-                  {
-                    "description": "String",
-                    "type": "record",
-                    "key": {
+                  ]
+                },
+                "value": {
+                  "type": "union",
+                  "options": [
+                    {
                       "type": "string"
                     },
-                    "value": {
-                      "type": "union",
-                      "options": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "number"
-                        }
-                      ]
+                    {
+                      "type": "number"
                     }
-                  }
-                ]
+                  ]
+                }
               }
             }
           },
@@ -659,7 +638,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "promise"
+                "values": ["promise"]
               },
               "value": {
                 "$ref": "#/$defs/reference-or-type"
@@ -667,29 +646,30 @@
             }
           },
           {
-            "description": "Effect",
+            "description": "Transform",
             "type": "object",
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "effect"
+                "values": ["transform"]
               },
-              "effects": {
-                "type": "array",
-                "element": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string"
-                    },
-                    "type": {
-                      "type": "enum",
-                      "values": ["refinement", "transform", "preprocess"]
-                    }
-                  }
-                }
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Pipe",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "values": ["pipe"]
               },
               "inner": {
+                "$ref": "#/$defs/reference-or-type"
+              },
+              "outer": {
                 "$ref": "#/$defs/reference-or-type"
               }
             }
@@ -700,7 +680,7 @@
             "properties": {
               "type": {
                 "type": "literal",
-                "value": "catch"
+                "values": ["catch"]
               },
               "value": {
                 "type": "any"

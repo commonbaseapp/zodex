@@ -27,7 +27,7 @@ npm install zodex
 ## Usage
 
 ```ts
-import { z } from "zod";
+import { z } from "zod/v4";
 import { zerialize } from "zodex";
 
 const someZodType = z.discriminatedUnion("id", [
@@ -47,11 +47,11 @@ type Shape = {
     {
       type: "object";
       properties: {
-        id: { type: "literal"; value: "a" };
+        id: { type: "literal"; values: ["a"] };
         count: { type: "number"; isOptional: true };
       };
     },
-    { type: "object"; properties: { id: { type: "literal"; value: "b" } } }
+    { type: "object"; properties: { id: { type: "literal"; values: ["b"] } } }
   ];
 };
 ```
@@ -66,7 +66,8 @@ options:
     properties:
       id:
         type: "literal"
-        value: "a"
+        values:
+          - "a"
       count:
         type: "number"
         isOptional: true
@@ -74,7 +75,8 @@ options:
     properties:
       id:
         type: "literal"
-        value: "b"
+        values:
+          - "b"
 ```
 
 ## Options
@@ -82,17 +84,16 @@ options:
 Both `zerialize` and `dezerialize` accept an options object with the
 same properties.
 
-Since Zod does not allow the specification of the names of effects
-(refinements, transforms, and preprocesses), we allow you to supply
-as options maps of names to effects so that these can be part of
+Since Zod does not allow the specification of the names of checks and
+transforms (and preprocesses), we allow you to supply
+as options maps of names to checks/transforms so that these can be part of
 serialization and deserialization. If none of these options are
-supplied, the effects will be omitted.
+supplied, the checks/transforms will be omitted.
 
 Properties:
 
-- `superRefinements` - Map of name to `.superRefine()` functions
-- `transforms` - Map of name to `.transform()` functions
-- `preprocesses` - Map of name to `z.preprocess()` functions
+- `checks` - Map of name to `.checks()` functions
+- `transforms` - Map of name to `.transform()` (and `.preprocess`) functions
 
 ## Use of JSON References
 
@@ -134,7 +135,7 @@ or target the whole object or individual properties.
 ## Caveats
 
 - `brand` is not supportable and omitted
-- `lazy` and `pipeline` types are unwrapped
+- `lazy` type is unwrapped; `pipe` is unwrapped when no transforms are supplied
 - `catch` with a function can have its then-value serialized but it
   cannot then be deserialized back into using the original function
 - Due to technical limitations, we cannot support the regular

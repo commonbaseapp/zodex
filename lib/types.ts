@@ -8,8 +8,7 @@ export type SzNumber = {
   minInclusive?: boolean;
   maxInclusive?: boolean;
   multipleOf?: number;
-  int?: boolean;
-  finite?: boolean;
+  format?: typeof NUMBER_FORMATS extends Set<infer T> ? T : never;
 };
 export type SzBigInt = {
   type: "bigInt";
@@ -19,7 +18,16 @@ export type SzBigInt = {
   minInclusive?: boolean;
   maxInclusive?: boolean;
   multipleOf?: string;
+  format?: "int64" | "uint64"
 };
+
+export const NUMBER_FORMATS = new Set([
+  "int32",
+  "uint32",
+  "float32",
+  "float64",
+  "safeint"
+] as const);
 
 export const STRING_KINDS = new Set([
   "email",
@@ -34,6 +42,12 @@ export const STRING_KINDS = new Set([
   "duration",
   "base64",
   "base64url",
+  "guid",
+  "xid",
+  "ksuid",
+  "json_string",
+  "e164",
+  "jwt"
 ] as const);
 
 export type SzString = {
@@ -70,6 +84,10 @@ export type SzString = {
         precision?: number;
       }
     | {
+      kind: "jwt",
+      algorithm?: string
+    }
+    | {
         kind: typeof STRING_KINDS extends Set<infer T> ? T : never;
       }
   );
@@ -79,6 +97,8 @@ export type SzDate = {
   coerce?: boolean;
   min?: number;
   max?: number;
+  minInclusive?: boolean;
+  maxInclusive?: boolean;
 };
 
 export type SzBoolean = { type: "boolean"; coerce?: boolean };
@@ -106,7 +126,7 @@ export type SzPrimitive =
   | SzVoid
   | SzSymbol;
 
-export type SzLiteral<T> = { type: "literal"; value: T };
+export type SzLiteral<T> = { type: "literal"; values: T };
 export type SzArray<T extends SzType = SzType> = {
   type: "array";
   element: T;
@@ -172,25 +192,10 @@ export type SzSet<T extends SzType = SzType> = {
   minSize?: number;
   maxSize?: number;
 };
-export type SzFunction<Args extends SzTuple, Return extends SzType> = {
-  type: "function";
-  args: Args;
-  returns: Return;
-};
 export type SzEnum<
-  Values extends [string, ...string[]] = [string, ...string[]]
+  Values extends Readonly<Record<string, import('zod/v4/core').util.EnumValue>> = Readonly<Record<string, import('zod/v4/core').util.EnumValue>>
 > = {
   type: "enum";
-  values: Values;
-};
-
-export type SzNativeEnum<
-  Values extends { [key: string]: string | number; [key: number]: string } = {
-    [key: string]: string | number;
-    [key: number]: string;
-  }
-> = {
-  type: "nativeEnum";
   values: Values;
 };
 
@@ -205,13 +210,15 @@ export type SzCatch<T extends SzType = SzType> = {
   innerType: T;
 };
 
-export type SzEffect<T extends SzType = SzType> = {
-  type: "effect";
-  effects: {
-    name: string;
-    type: "refinement" | "transform" | "preprocess";
-  }[];
+export type SzPipe<T extends SzType = SzType, U extends SzType = SzType> = {
+  type: "pipe";
   inner: T;
+  outer: U;
+};
+
+export type SzTransform = {
+  type: "transform";
+  name: string
 };
 
 // Modifiers
@@ -223,8 +230,13 @@ export type SzReadonly = { readonly: boolean };
 
 export type SzRef = { $ref: string };
 
+export type SzChecks = {
+  checks: {name: string}[]
+};
+
 export type SzExtras = Partial<
-  SzNullable & SzOptional & SzDefault<any> & SzDescription & SzReadonly
+  SzNullable & SzOptional & SzDefault<any> & SzDescription & SzReadonly &
+  SzChecks
 >;
 
 // Conjunctions
@@ -243,12 +255,11 @@ export type SzType = (
   | SzRecord<any, any>
   | SzMap<any, any>
   | SzSet<any>
-  | SzFunction<any, any>
   | SzEnum<any>
-  | SzNativeEnum<any>
   | SzPromise<any>
-  | SzEffect<any>
   | SzCatch<any>
+  | SzPipe<any, any>
+  | SzTransform
 ) &
   SzExtras;
 
@@ -272,8 +283,6 @@ export type SzUnionize<T extends SzType | SzRef> =
       ? SzUnionize<Value>
       : T extends SzSet<infer T>
       ? SzUnionize<T>
-      : T extends SzFunction<infer Args, infer Return>
-      ? SzUnionize<Args | Return>
       : T extends SzPromise<infer Value>
       ? SzUnionize<Value>
       : never);

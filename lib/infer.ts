@@ -13,7 +13,6 @@ import {
   SzRecord,
   SzMap,
   SzSet,
-  SzFunction,
   SzEnum,
   SzPromise,
   SzRef,
@@ -48,7 +47,7 @@ export type SzInfer<T extends SzType> =
   | (T["type"] extends keyof PrimitiveTypes
       ? PrimitiveTypes[T["type"]]
       : T extends { type: "literal" }
-      ? T["value"]
+      ? T["values"]
       : T extends SzArray<infer T>
       ? SzInfer<T>[]
       : T extends SzObject<infer Properties>
@@ -71,10 +70,8 @@ export type SzInfer<T extends SzType> =
       ? Record<string, SzInfer<Value>>
       : T extends SzSet<infer T>
       ? T[]
-      : T extends SzFunction<infer Args, infer Return>
-      ? (...args: SzInfer<Args>[]) => SzInfer<Return>
       : T extends SzEnum<infer Values>
-      ? Values[number]
+      ? Values[string]
       : T extends SzPromise<infer Value>
       ? Promise<SzInfer<Value>>
       : unknown);

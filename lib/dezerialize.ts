@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import {
   SzOptional,
   SzNullable,
@@ -14,11 +14,10 @@ import {
   SzRecord,
   SzMap,
   SzSet,
-  SzFunction,
   SzEnum,
-  SzNativeEnum,
   SzPromise,
-  SzEffect,
+  SzPipe,
+  SzTransform,
   SzCatch,
   SzType,
   SzString,
@@ -35,24 +34,20 @@ import {
   SzUnknown,
   SzVoid,
   SzRef,
+  NUMBER_FORMATS,
 } from "./types";
+
 import { ZodTypes } from "./zod-types";
 
 type DezerializerOptions = {
-  superRefinements?: {
-    [key: string]: (
-      value: unknown,
-      ctx: z.RefinementCtx
-    ) => Promise<void> | void;
+  checks?: {
+    [key: string]: (opts: { value: unknown }) => Promise<void> | void;
   };
   transforms?: {
     [key: string]: (
       value: unknown,
-      ctx: z.RefinementCtx
+      ctx: z.core.ParsePayload
     ) => Promise<unknown> | unknown;
-  };
-  preprocesses?: {
-    [key: string]: (value: unknown, ctx: z.RefinementCtx) => unknown;
   };
   path: string;
   pathToSchema: Map<string, ZodTypes>;
@@ -72,7 +67,8 @@ export type Dezerialize<T extends SzType | SzRef> = T extends SzRef
   T extends SzOptional
   ? Dezerialize<OmitKey<T, SzOptional>> extends infer I
     ? I extends ZodTypes
-      ? z.ZodOptional<I>
+      ? // @ts-expect-error Not infinite
+        z.ZodOptional<I>
       : never
     : never
   : T extends SzNullable
@@ -119,8 +115,12 @@ export type Dezerialize<T extends SzType | SzRef> = T extends SzRef
   ? z.ZodNever
   : T extends SzVoid
   ? z.ZodVoid
-  : T extends SzLiteral<infer Value>
+  : T extends SzLiteral<infer Value extends z.core.util.Primitive>
   ? z.ZodLiteral<Value> // List Collections
+  : T extends SzPipe
+  ? z.ZodPipe
+  : T extends SzTransform
+  ? z.ZodTransform
   : T extends SzTuple<infer _Items>
   ? z.ZodTuple<any> //DezerializeArray<Items>>
   : T extends SzSet<infer Value>
@@ -140,20 +140,14 @@ export type Dezerialize<T extends SzType | SzRef> = T extends SzRef
   : T extends SzUnion<infer _Options>
   ? z.ZodUnion<any>
   : T extends SzDiscriminatedUnion<infer Discriminator, infer _Options>
-  ? z.ZodDiscriminatedUnion<Discriminator, any>
+  ? z.ZodDiscriminatedUnion<any>
   : T extends SzIntersection<infer L, infer R>
   ? z.ZodIntersection<Dezerialize<L>, Dezerialize<R>> // Specials
-  : T extends SzFunction<infer Args, infer Return>
-  ? z.ZodFunction<Dezerialize<Args>, Dezerialize<Return>>
   : T extends SzPromise<infer Value>
   ? z.ZodPromise<Dezerialize<Value>>
-  : T extends SzEffect<infer Value>
-  ? z.ZodEffects<Dezerialize<Value>>
   : T extends SzCatch<infer Value>
   ? z.ZodCatch<Dezerialize<Value>>
-  : T extends SzNativeEnum<infer Value>
-  ? z.ZodNativeEnum<Value>
-  : unknown;
+  : any; // unknown;
 
 type DezerializersMap = {
   [T in SzType["type"]]: (
@@ -164,18 +158,37 @@ type DezerializersMap = {
 
 function checkRef(item: SzType, opts: DezerializerOptions) {
   if ("$ref" in item) {
-    const lazy = z.lazy(() => z.null());
+    const lazy = z.lazy(() => z.string()); // Just a placeholder
     opts.$refs.push([lazy, item.$ref as string]);
     return lazy;
   }
   return false;
 }
 
+const getCustomChecks = (
+  base: ZodTypes,
+  shape: SzType,
+  opts: DezerializerOptions
+) => {
+  if ("checks" in shape && opts.checks) {
+    for (const check of shape.checks as { name: string }[]) {
+      base = base.check(opts.checks[check.name]);
+    }
+  }
+  return base;
+};
+
 const d = dezerializeRefs;
 
 const dezerializers = {
-  number: (shape) => {
-    let n = shape.coerce ? z.coerce.number() : z.number();
+  number: (shape, opts) => {
+    const method =
+      shape.format && NUMBER_FORMATS.has(shape.format)
+        ? shape.format === "safeint"
+          ? "int"
+          : shape.format
+        : "number";
+    let n = shape.coerce ? z.coerce.number() : z[method]();
     if (shape.min !== undefined) {
       n = shape.minInclusive ? n.min(shape.min) : n.gt(shape.min);
     }
@@ -185,15 +198,9 @@ const dezerializers = {
     if (shape.multipleOf !== undefined) {
       n = n.multipleOf(shape.multipleOf);
     }
-    if (shape.int) {
-      n = n.int();
-    }
-    if (shape.finite) {
-      n = n.finite();
-    }
-    return n;
+    return getCustomChecks(n, shape, opts);
   },
-  string: (shape) => {
+  string: (shape, opts) => {
     let s = shape.coerce ? z.coerce.string() : z.string();
     if (shape.min !== undefined) {
       s = s.min(shape.min);
@@ -227,30 +234,52 @@ const dezerializers = {
     }
     if ("kind" in shape) {
       if (shape.kind == "ip") {
-        s = s.ip({ version: shape.version });
+        if (shape.version == "v6") {
+          s = z.ipv6();
+        } else {
+          s = z.ipv4();
+        }
       } else if (shape.kind == "cidr") {
-        s = s.cidr({ version: shape.version });
+        if (shape.version === "v6") {
+          s = z.cidrv6();
+        } else {
+          s = z.cidrv4();
+        }
       } else if (shape.kind == "datetime") {
-        s = s.datetime({
+        s = z.iso.datetime({
           offset: shape.offset,
           precision: shape.precision,
           local: shape.local,
         });
       } else if (shape.kind == "time") {
-        s = s.time({
+        s = z.iso.time({
           precision: shape.precision,
         });
-      } else {
-        s = s[shape.kind]();
+      } else if (shape.kind === "duration" || shape.kind === "date") {
+        s = z.iso[shape.kind]();
+      } else if (shape.kind === "jwt") {
+        s = "algorithm" in shape ? z.jwt({ alg: shape.algorithm }) : z.jwt();
+      } else if (shape.kind !== "json_string") {
+        // Todo: how to get `json_string`?
+        s = z[shape.kind]();
       }
     }
 
-    return s;
+    return getCustomChecks(s, shape, opts);
   },
-  boolean: (shape) => (shape.coerce ? z.coerce.boolean() : z.boolean()),
+  boolean: (shape) =>
+    shape.coerce
+      ? // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- Sometimes
+        // @ts-ignore Not infinite
+        z.coerce.boolean()
+      : z.boolean(),
   nan: () => z.nan(),
-  bigInt: (shape) => {
-    let i = shape.coerce ? z.coerce.bigint() : z.bigint();
+  bigInt: (shape, opts) => {
+    const method =
+      shape.format && ["uint64", "int64"].includes(shape.format)
+        ? shape.format
+        : "bigint";
+    let i = shape.coerce ? z.coerce.bigint() : z[method]();
     if (shape.min !== undefined) {
       const min = BigInt(shape.min);
       i = shape.minInclusive ? i.min(min) : i.gt(min);
@@ -263,9 +292,9 @@ const dezerializers = {
       const multipleOf = BigInt(shape.multipleOf);
       i = i.multipleOf(multipleOf);
     }
-    return i;
+    return getCustomChecks(i, shape, opts);
   },
-  date: (shape) => {
+  date: (shape, opts) => {
     let i = shape.coerce ? z.coerce.date() : z.date();
     if (shape.min !== undefined) {
       i = i.min(new Date(shape.min));
@@ -273,7 +302,7 @@ const dezerializers = {
     if (shape.max !== undefined) {
       i = i.max(new Date(shape.max));
     }
-    return i;
+    return getCustomChecks(i, shape, opts);
   },
   undefined: () => z.undefined(),
   null: () => z.null(),
@@ -282,7 +311,7 @@ const dezerializers = {
   never: () => z.never(),
   void: () => z.void(),
 
-  literal: (shape) => z.literal(shape.value),
+  literal: (shape) => z.literal(shape.values),
 
   symbol: () => z.symbol(),
 
@@ -309,9 +338,11 @@ const dezerializers = {
       i = i.rest(rest);
     }
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
   set: ((shape: SzSet, opts: DezerializerOptions) => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- Sometimes
+    // @ts-ignore Not infinite
     let i = z.set(
       checkRef(shape.value, opts) ||
         d(shape.value, {
@@ -326,7 +357,7 @@ const dezerializers = {
       i = i.max(shape.maxSize);
     }
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
   array: ((shape: SzArray, opts: DezerializerOptions) => {
     let i = z.array(
@@ -343,7 +374,7 @@ const dezerializers = {
       i = i.max(shape.maxLength);
     }
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
 
   object: ((shape: SzObject, opts: DezerializerOptions) => {
@@ -360,38 +391,24 @@ const dezerializers = {
           ];
         })
       )
-    ) as z.ZodObject<
-      {
-        [k: string]: ZodTypes;
-      },
-      "strip" | "strict" | "passthrough",
-      z.ZodTypeAny,
-      {
-        [x: string]: unknown;
-      },
-      {
-        [x: string]: unknown;
-      }
-    >;
+    ) as z.ZodObject<{
+      [k: string]: ZodTypes;
+    }>;
 
     if (shape.catchall) {
       i = i.catchall(d(shape.catchall, opts));
-    } else if (shape.unknownKeys === "strict") {
-      i = i.strict();
-    } else if (shape.unknownKeys === "passthrough") {
-      i = i.passthrough();
     }
 
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
   record: ((shape: SzRecord, opts: DezerializerOptions) => {
     const i = z.record(
       checkRef(shape.key, opts) ||
-        d(shape.key, {
+        (d(shape.key, {
           ...opts,
           path: opts.path + "/key",
-        }),
+        }) as z.ZodString | z.ZodNumber | z.ZodSymbol),
       checkRef(shape.value, opts) ||
         d(shape.value, {
           ...opts,
@@ -399,7 +416,7 @@ const dezerializers = {
         })
     );
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
   map: ((shape: SzMap<any, any>, opts: DezerializerOptions) => {
     const i = z.map(
@@ -416,10 +433,8 @@ const dezerializers = {
     );
 
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
-
-  nativeEnum: ((shape: SzNativeEnum) => z.nativeEnum(shape.values)) as any,
 
   enum: ((shape: SzEnum) => z.enum(shape.values)) as any,
 
@@ -435,7 +450,7 @@ const dezerializers = {
       ) as any
     );
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
   discriminatedUnion: ((
     shape: SzDiscriminatedUnion,
@@ -453,7 +468,7 @@ const dezerializers = {
       ) as any
     );
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
   intersection: ((shape: SzIntersection, opts: DezerializerOptions) => {
     const i = z.intersection(
@@ -470,26 +485,9 @@ const dezerializers = {
     );
 
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
 
-  function: ((shape: SzFunction<any, any>, opts: DezerializerOptions) => {
-    const i = z.function(
-      checkRef(shape.args, opts) ||
-        (d(shape.args, {
-          ...opts,
-          path: opts.path + "/args",
-        }) as any),
-      checkRef(shape.returns, opts) ||
-        d(shape.returns, {
-          ...opts,
-          path: opts.path + "/returns",
-        })
-    );
-
-    opts.pathToSchema.set(opts.path, i);
-    return i;
-  }) as any,
   promise: ((shape: SzPromise, opts: DezerializerOptions) => {
     const i = z.promise(
       checkRef(shape.value, opts) ||
@@ -513,35 +511,34 @@ const dezerializers = {
     opts.pathToSchema.set(opts.path, base);
     return base;
   }) as any,
-  effect: ((shape: SzEffect, opts: DezerializerOptions) => {
-    let base =
-      checkRef(shape.inner, opts) ||
+  transform: (shape: SzTransform, opts: DezerializerOptions) => {
+    if (!opts.transforms || !(shape.name in opts.transforms)) {
+      throw new Error(
+        "Must supply transforms for the given transform name, " + shape.name
+      );
+    }
+    return z.transform(opts.transforms[shape.name]);
+  },
+  pipe: (shape: SzPipe, opts: DezerializerOptions) => {
+    const base = (checkRef(shape.inner, opts) ||
       d(shape.inner, {
         ...opts,
         path: opts.path + "/inner",
-      });
-    if (
-      !(
-        "superRefinements" in opts ||
-        "transforms" in opts ||
-        "preprocesses" in opts
-      )
-    ) {
-      opts.pathToSchema.set(opts.path, base);
-      return base;
-    }
-    for (const { name, type } of shape.effects) {
-      if (type === "refinement" && opts.superRefinements?.[name]) {
-        base = base.superRefine(opts.superRefinements[name]);
-      } else if (type === "transform" && opts.transforms?.[name]) {
-        base = base.transform(opts.transforms[name]);
-      } else if (type === "preprocess" && opts.preprocesses?.[name]) {
-        base = z.preprocess(opts.preprocesses[name], base);
-      }
-    }
-    opts.pathToSchema.set(opts.path, base);
-    return base;
-  }) as any,
+      })) as z.ZodType;
+
+    return getCustomChecks(
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- Sometimes
+      // @ts-ignore Not infinite
+      base.pipe(
+        d(shape.outer, {
+          ...opts,
+          path: opts.path + "/outer",
+        })
+      ) as z.ZodPipe<ZodTypes, ZodTypes>,
+      shape,
+      opts
+    );
+  },
 } satisfies DezerializersMap as DezerializersMap;
 
 // Must match the exported Dezerialize types
@@ -630,7 +627,7 @@ export function dezerialize(
   const dez = dezerializeRefs(shape, options);
 
   for (const [lazy, $ref] of options.$refs) {
-    lazy._def.getter = () => {
+    lazy.def.getter = () => {
       const schema = options.pathToSchema.get($ref);
       if (schema) {
         return schema;
