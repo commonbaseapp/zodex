@@ -287,6 +287,8 @@ const dezerializers = {
         } else {
           s = z.cidrv4();
         }
+      } else if (shape.kind == "uuid") {
+        s = z.uuid({ version: shape.version });
       } else if (shape.kind == "datetime") {
         s = z.iso.datetime({
           offset: shape.offset,
@@ -301,6 +303,14 @@ const dezerializers = {
         s = z.iso[shape.kind]();
       } else if (shape.kind === "jwt") {
         s = "algorithm" in shape ? z.jwt({ alg: shape.algorithm }) : z.jwt();
+      } else if (shape.kind == "email") {
+        s =
+          "pattern" in shape && shape.pattern
+            ? z.email({
+                pattern: new RegExp(shape.pattern, shape.flags),
+                /* c8 ignore next -- Guard */
+              })
+            : z.email();
       } else if (shape.kind !== "json_string") {
         // Todo: how to get `json_string`?
         s = z[shape.kind]();
@@ -335,6 +345,21 @@ const dezerializers = {
       i = i.multipleOf(multipleOf);
     }
     return getCustomChecks(i, shape, opts);
+  },
+  file: (shape) => {
+    let i = z.file();
+
+    if (shape.max) {
+      i = i.max(shape.max);
+    }
+    if (shape.min) {
+      i = i.min(shape.min);
+    }
+    if (shape.mime) {
+      i = i.mime(shape.mime);
+    }
+
+    return i;
   },
   date: (shape, opts) => {
     let i = shape.coerce ? z.coerce.date() : z.date();

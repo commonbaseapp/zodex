@@ -30,10 +30,8 @@ export const NUMBER_FORMATS = new Set([
 ] as const);
 
 export const STRING_KINDS = new Set([
-  "email",
   "url",
   "emoji",
-  "uuid",
   "nanoid",
   "cuid",
   "cuid2",
@@ -48,6 +46,12 @@ export const STRING_KINDS = new Set([
   "json_string",
   "e164",
   "jwt",
+
+  // "uuidv8", // In docs only
+  // "ascii", // In docs only
+  // "utf8", // In docs only
+  // "lowercase", // Doesn't appear to have enough data to serialize
+  // "uppercase", // Doesn't appear to have enough data to serialize
 ] as const);
 
 export type SzString = {
@@ -72,6 +76,7 @@ export type SzString = {
     | object
     | { kind: "ip"; version?: "v4" | "v6" }
     | { kind: "cidr"; version?: "v4" | "v6" }
+    | { kind: "uuid"; version?: "v4" | "v7" }
     | { regex: string; flags?: string }
     | {
         kind: "time";
@@ -82,6 +87,11 @@ export type SzString = {
         offset?: true;
         local?: true;
         precision?: number;
+      }
+    | {
+        kind: "email";
+        pattern?: string;
+        flags?: string;
       }
     | {
         kind: "jwt";
@@ -101,6 +111,13 @@ export type SzDate = {
   maxInclusive?: boolean;
 };
 
+export type SzFile = {
+  type: "file";
+  min: number;
+  max: number;
+  mime: string[];
+};
+
 export type SzBoolean = { type: "boolean"; coerce?: boolean };
 export type SzNaN = { type: "nan" };
 export type SzUndefined = { type: "undefined" };
@@ -118,6 +135,7 @@ export type SzPrimitive =
   | SzString
   | SzNaN
   | SzDate
+  | SzFile
   | SzUndefined
   | SzNull
   | SzAny

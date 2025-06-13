@@ -105,13 +105,40 @@ test.each([
   p(z.string().toUpperCase(), { type: "string", toUpperCase: true }),
   p(z.string().trim(), { type: "string", trim: true }),
 
+  p(z.uuidv4(), { type: "string", kind: "uuid", version: "v4" }),
+  p(z.uuidv7(), { type: "string", kind: "uuid", version: "v7" }),
+  p(z.ipv4(), { type: "string", kind: "ip", version: "v4" }),
+  p(z.ipv6(), { type: "string", kind: "ip", version: "v6" }),
+  p(z.cidrv4(), { type: "string", kind: "cidr", version: "v4" }),
+  p(z.cidrv6(), { type: "string", kind: "cidr", version: "v6" }),
+  p(z.e164(), { type: "string", kind: "e164" }),
+
   p(z.jwt(), { type: "string", kind: "jwt" }),
   p(z.jwt({ alg: "RS512" }), {
     type: "string",
     kind: "jwt",
     algorithm: "RS512",
   }),
+  // p(z.lowercase(), { type: "string", kind: "lowercase" }),
+  // p(z.uppercase(), { type: "string", kind: "uppercase" }),
+  p(z.file().min(10_000).max(1_000_000).mime(["image/png"]), {
+    type: "file",
+    min: 10000,
+    max: 1000000,
+    mime: ["image/png"],
+  }),
   p(z.email(), { type: "string", kind: "email" }),
+  p(
+    z.email({
+      pattern: /abc@example\.com/u,
+    }),
+    {
+      type: "string",
+      kind: "email",
+      pattern: "abc@example\\.com",
+      flags: "u",
+    },
+  ),
   p(z.url(), { type: "string", kind: "url" }),
   p(z.emoji(), { type: "string", kind: "emoji" }),
   p(z.uuid(), { type: "string", kind: "uuid" }),
@@ -550,6 +577,20 @@ test("discriminated union", () => {
   const parsed = zodexSchema.safeParse(shape);
   expect(parsed.success).to.equal(true);
 });
+
+// Can't seem to detect type to implement stringbool
+// test("stringbool", () => {
+//   const schema = z.stringbool();
+//   expect(schema.parse("yes")).toEqual(true);
+//   const shape = zerialize(schema);
+//   expect(shape).toEqual({
+//     type: "boolean"
+//   });
+//   expect(dezerialize(shape as SzType).parse("yes")).toEqual(true);
+
+//   const parsed = zodexSchema.safeParse(shape);
+//   expect(parsed.success).to.equal(true);
+// });
 
 test("coerce (number)", () => {
   const schema = z.coerce.number();

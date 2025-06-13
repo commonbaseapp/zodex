@@ -88,6 +88,24 @@
             },
             {
               "type": "object",
+              "description": "UUID type",
+              "properties": {
+                "kind": {
+                  "type": "literal",
+                  "values": ["uuid"]
+                },
+                "version": {
+                  "type": "enum",
+                  "values": {
+                    "v4": "v4",
+                    "v6": "v6"
+                  },
+                  "isOptional": true
+                }
+              }
+            },
+            {
+              "type": "object",
               "description": "CIDR type",
               "properties": {
                 "kind": {
@@ -108,6 +126,18 @@
               "description": "Regex",
               "properties": {
                 "regex": { "type": "string" },
+                "flags": { "type": "string", "isOptional": true }
+              }
+            },
+            {
+              "type": "object",
+              "description": "Email",
+              "properties": {
+                "kind": {
+                  "type": "literal",
+                  "values": ["email"]
+                },
+                "pattern": { "type": "string", "isOptional": true },
                 "flags": { "type": "string", "isOptional": true }
               }
             },
@@ -143,10 +173,9 @@
                   "type": "enum",
                   "values": {
                     "jwt": "jwt",
-                    "email": "email",
                     "url": "url",
                     "emoji": "emoji",
-                    "uuid": "uuid",
+                    "e164": "e164",
                     "nanoid": "nanoid",
                     "cuid": "cuid",
                     "cuid2": "cuid2",
@@ -349,6 +378,28 @@
               "type": {
                 "type": "literal",
                 "values": ["nan"]
+              }
+            }
+          },
+          {
+            "description": "File",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "values": ["file"]
+              },
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              },
+              "mime": {
+                "type": "array",
+                "element": {
+                  "type": "string"
+                }
               }
             }
           },

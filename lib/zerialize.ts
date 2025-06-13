@@ -335,31 +335,53 @@ const zerializers = {
               ? { kind: "cidr", version: "v4" }
               : format == "cidrv6"
                 ? { kind: "cidr", version: "v6" }
-                : format == "jwt"
+                : format == "uuid"
                   ? {
-                      kind: "jwt",
-                      ...("alg" in def ? { algorithm: def.alg } : {}),
+                      kind: "uuid",
+                      ...("version" in def ? { version: def.version } : {}),
                     }
-                  : "format" in def // && STRING_KINDS.has(format as any)
+                  : format == "jwt"
                     ? {
-                        kind: format,
-                        ...("precision" in def && def.precision
-                          ? {
-                              precision: def.precision,
-                            }
-                          : {}),
-                        ...("offset" in def && def.offset
-                          ? {
-                              offset: def.offset,
-                            }
-                          : {}),
-                        ...("local" in def && def.local
-                          ? {
-                              local: def.local,
-                            }
-                          : {}),
+                        kind: "jwt",
+                        ...("alg" in def ? { algorithm: def.alg } : {}),
                       }
-                    : {}),
+                    : format == "email"
+                      ? {
+                          kind: "email",
+                          ...("pattern" in def &&
+                          def.pattern &&
+                          typeof def.pattern == "object" &&
+                          "source" in def.pattern &&
+                          "flags" in def.pattern &&
+                          def.pattern.source !== z.regexes.email.source
+                            ? {
+                                pattern: def.pattern.source,
+                                flags: def.pattern.flags,
+                              }
+                            : {}),
+                        }
+                      : ("format" in def && STRING_KINDS.has(format as any)) ||
+                          format == "datetime" ||
+                          format == "time"
+                        ? {
+                            kind: format,
+                            ...("precision" in def && def.precision
+                              ? {
+                                  precision: def.precision,
+                                }
+                              : {}),
+                            ...("offset" in def && def.offset
+                              ? {
+                                  offset: def.offset,
+                                }
+                              : {}),
+                            ...("local" in def && def.local
+                              ? {
+                                  local: def.local,
+                                }
+                              : {}),
+                          }
+                        : {}),
       },
       def.coerce ? { coerce: true } : {},
     );
@@ -371,7 +393,6 @@ const zerializers = {
   bigint: (def, opts) => {
     const checks = def.checks?.reduce((o, check) => {
       const chk = check._zod.def.check;
-      const format = (check as z.core.$ZodCheckBigIntFormat)._zod.def.format;
       return {
         ...o,
         ...(chk == "greater_than"
@@ -416,6 +437,32 @@ const zerializers = {
       },
       def.coerce ? { coerce: true } : {},
     );
+  },
+  file: (def) => {
+    const checks = def.checks?.reduce((o, check) => {
+      const chk = check._zod.def.check;
+      return {
+        ...o,
+        ...(chk == "min_size"
+          ? {
+              min: (check as z.core.$ZodCheckMinSize<File>)._zod.def.minimum,
+            }
+          : chk == "max_size"
+            ? {
+                max: (check as z.core.$ZodCheckMaxSize<File>)._zod.def.maximum,
+              }
+            : chk == "mime_type"
+              ? {
+                  mime: (check as z.core.$ZodCheckMimeType<File>)._zod.def.mime,
+                  /* c8 ignore next 2 -- Guard */
+                }
+              : {}),
+      };
+    }, {});
+    return {
+      type: "file",
+      ...checks,
+    };
   },
   date: (def, opts) => {
     const checks = def.checks?.reduce((o, check) => {
