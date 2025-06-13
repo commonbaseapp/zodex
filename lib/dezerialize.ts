@@ -242,6 +242,19 @@ const dezerializers = {
     }
     return getCustomChecks(n, shape, opts);
   },
+  templateLiteral: (shape, opts) => {
+    return z.templateLiteral(
+      shape.parts.map((part, idx) => {
+        return typeof part == "string"
+          ? part
+          : checkRef(part, opts) ||
+              d(part, {
+                ...opts,
+                path: opts.path + "/parts/" + idx,
+              });
+      }),
+    );
+  },
   string: (shape, opts) => {
     let s = shape.coerce ? z.coerce.string() : z.string();
     if (shape.min !== undefined) {

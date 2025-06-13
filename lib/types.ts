@@ -111,6 +111,11 @@ export type SzDate = {
   maxInclusive?: boolean;
 };
 
+export type SzTemplateLiteral = {
+  type: "templateLiteral";
+  parts: (string | SzType)[];
+};
+
 export type SzFile = {
   type: "file";
   min: number;
@@ -270,6 +275,7 @@ export type SzDefaultOrNullable = SzDefault<any> | SzNullable;
 export type SzType = (
   | SzPrimitive
   | SzLiteral<any>
+  | SzTemplateLiteral
   | SzArray<any>
   | SzObject<any, any>
   | SzUnion<any>

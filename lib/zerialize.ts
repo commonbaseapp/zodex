@@ -255,6 +255,21 @@ const zerializers = {
       def.coerce ? { coerce: true } : {},
     );
   },
+  template_literal: (def, opts) => {
+    const parts = def.parts.map((part, idx) => {
+      if (typeof part == "string") {
+        return part;
+      }
+      return s(part, {
+        ...opts,
+        currentPath: [...opts.currentPath, "parts", String(idx)],
+      });
+    });
+    return {
+      type: "templateLiteral",
+      parts,
+    };
+  },
   string: (def, opts) => {
     const checks = (def.checks as z.core.$ZodChecks[])?.reduce((o, check) => {
       const chk = check._zod.def.check;

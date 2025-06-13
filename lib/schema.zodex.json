@@ -507,6 +507,30 @@
             }
           },
           {
+            "description": "Template literal",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "literal",
+                "values": ["templateLiteral"]
+              },
+              "parts": {
+                "type": "array",
+                "element": {
+                  "type": "union",
+                  "options": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "$ref": "#/$defs/reference-or-type"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
             "description": "Array",
             "type": "object",
             "properties": {

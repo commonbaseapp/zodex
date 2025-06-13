@@ -54,6 +54,7 @@ export type ZodTypes =
   | z.ZodPromise<ZodTypes>
   | z.ZodPipe<ZodTypes, ZodTypes>
   | z.ZodTransform<unknown, unknown>
-  | z.ZodFile;
+  | z.ZodFile
+  | z.ZodTemplateLiteral;
 
 export type ZTypeName<T extends ZodTypes> = T["def"]["type"];

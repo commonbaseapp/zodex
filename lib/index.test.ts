@@ -121,6 +121,17 @@ test.each([
   }),
   // p(z.lowercase(), { type: "string", kind: "lowercase" }),
   // p(z.uppercase(), { type: "string", kind: "uppercase" }),
+
+  p(z.templateLiteral(["email: ", z.string()]), {
+    type: "templateLiteral",
+    parts: [
+      "email: ",
+      {
+        type: "string",
+      },
+    ],
+  }),
+
   p(z.file().min(10_000).max(1_000_000).mime(["image/png"]), {
     type: "file",
     min: 10000,
