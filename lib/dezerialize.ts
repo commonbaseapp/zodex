@@ -41,13 +41,10 @@ import { ZodTypes } from "./zod-types";
 
 type DezerializerOptions = {
   checks?: {
-    [key: string]: (opts: { value: unknown }) => Promise<void> | void;
+    [key: string]: (ctx: z.core.ParsePayload) => Promise<void> | void;
   };
   transforms?: {
-    [key: string]: (
-      value: unknown,
-      ctx: z.core.ParsePayload,
-    ) => Promise<unknown> | unknown;
+    [key: string]: (ctx: z.core.ParsePayload) => Promise<unknown> | unknown;
   };
   path: string;
   pathToSchema: Map<string, ZodTypes>;

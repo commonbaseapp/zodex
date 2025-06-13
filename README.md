@@ -82,7 +82,7 @@ options:
 ## Options
 
 Both `zerialize` and `dezerialize` accept an options object with the
-same properties.
+same `checks` and `transforms` properties.
 
 Since Zod does not allow the specification of the names of checks and
 transforms (and preprocesses), we allow you to supply

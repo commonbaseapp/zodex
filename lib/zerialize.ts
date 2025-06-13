@@ -245,10 +245,7 @@ type ZerializerOptions = {
     [key: string]: (ctx: z.core.ParsePayload<any>) => Promise<void> | void;
   };
   transforms?: {
-    [key: string]: (
-      value: any,
-      ctx: z.RefinementCtx,
-    ) => Promise<unknown> | unknown;
+    [key: string]: (ctx: z.core.ParsePayload) => Promise<unknown> | unknown;
   };
   currentPath: string[];
   seenObjects: WeakMap<ZodTypes, string>;
@@ -261,10 +258,13 @@ type ZerializersMap = {
   ) => any; //Zerialize<ZodTypeMap[Key]>;
 };
 
-const getCustomChecks = (def: any, opts: ZerializerOptions) => {
+const getCustomChecks = (
+  def: { checks?: z.core.$ZodCheck[] },
+  opts: ZerializerOptions,
+) => {
   let customChecks = null;
   if ("checks" in opts && opts.checks) {
-    customChecks = (def.checks as z.core.$ZodCheck[])
+    customChecks = def.checks
       ?.filter((check) => {
         const chk = check._zod.def.check;
         return chk == "custom";
