@@ -278,7 +278,7 @@ export type SzKey = (
   | SzString
   | SzNumber
   | SzSymbol
-  | SzLiteral<string | number | symbol>
+  | SzLiteral<string | number>
   | SzEnum<any>
 ) &
   SzExtras;
