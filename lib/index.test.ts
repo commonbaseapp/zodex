@@ -1598,6 +1598,76 @@ test("Nested recursion", () => {
   // expect(rezer).toEqual(expectedShape);
 });
 
+test("zod 4 recursion", () => {
+  const Category = z.object({
+    name: z.string(),
+    get subcategories() {
+      return z.array(Category);
+    },
+  });
+  const expectedShape = {
+    type: "object",
+    properties: {
+      name: {
+        type: "string",
+      },
+      subcategories: {
+        type: "array",
+        element: {
+          $ref: "#",
+        },
+      },
+    },
+  };
+  const zer = zerialize(Category);
+  // console.log(JSON.stringify(zer, null, 2));
+  expect(zer).toEqual(expectedShape);
+  dezerialize(zer);
+
+  const User = z.object({
+    email: z.email(),
+    get posts() {
+      return z.array(Post);
+    },
+  });
+
+  const Post = z.object({
+    title: z.string(),
+    get author() {
+      return User;
+    },
+  });
+
+  const expectedShape2 = {
+    properties: {
+      author: {
+        properties: {
+          email: {
+            kind: "email",
+            type: "string",
+          },
+          posts: {
+            element: {
+              $ref: "#",
+            },
+            type: "array",
+          },
+        },
+        type: "object",
+      },
+      title: {
+        type: "string",
+      },
+    },
+    type: "object",
+  };
+
+  const zer2 = zerialize(Post);
+  // console.log(JSON.stringify(zer, null, 2));
+  expect(zer2).toEqual(expectedShape2);
+  dezerialize(zer);
+});
+
 test("catch", () => {
   const schema = z.number().catch(42);
 
