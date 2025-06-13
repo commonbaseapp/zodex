@@ -2,6 +2,7 @@ import fs from "fs";
 import { expect, test } from "vitest";
 import { z } from "zod/v4";
 import { SzCatch, SzEnum } from "./types";
+import { ZodTypes } from "./zod-types";
 
 import { dezerialize, SzType, zerialize, Zerialize } from "./index";
 
@@ -10,10 +11,7 @@ const zodexSchemaJSON = JSON.parse(
 );
 const zodexSchema = dezerialize(zodexSchemaJSON);
 
-const p = <
-  Schema extends z.ZodFirstPartySchemaTypes,
-  Shape extends SzType = Zerialize<Schema>,
->(
+const p = <Schema extends ZodTypes, Shape extends SzType = Zerialize<Schema>>(
   schema: Schema,
   shape: Shape,
 ): [Schema, Shape] => [schema, shape];
@@ -525,7 +523,6 @@ test("discriminated union", () => {
     ])
     .default({ name: "Lea", reach: 42 });
 
-  // @ts-expect-error Not infinite
   const shape = zerialize(schema);
 
   // type InfType = z.infer<Dezerialize<typeof shape>>;
