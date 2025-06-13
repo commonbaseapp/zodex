@@ -486,6 +486,8 @@ test("discriminated union", () => {
       z.object({ name: z.literal("Lea"), reach: z.number() }),
     ])
     .default({ name: "Lea", reach: 42 });
+
+  // @ts-expect-error Not infinite
   const shape = zerialize(schema);
 
   // type InfType = z.infer<Dezerialize<typeof shape>>;

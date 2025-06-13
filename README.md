@@ -140,5 +140,5 @@ or target the whole object or individual properties.
   cannot then be deserialized back into using the original function
 - Due to technical limitations, we cannot support the regular
   `refine()`, `custom()` and `instanceof` methods (and they will be
-  ignored), but these are really just implementations of `superRefine()`
+  ignored), but these are really just implementations of `check()`
   which is supported

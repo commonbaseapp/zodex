@@ -605,6 +605,7 @@ const zerializers = {
           }
         : {}),
       ...getCustomChecks(def, opts),
+      // @ts-expect-error Not infinite
       options: def.options.map((opt, idx) => {
         const result = s(opt, {
           ...opts,
