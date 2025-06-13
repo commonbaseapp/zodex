@@ -379,7 +379,8 @@ const dezerializers = {
         if (typeof part === "string") {
           return part;
         }
-        const schema = checkRef(part, opts) ||
+        const schema =
+          checkRef(part, opts) ||
           d(part, {
             ...opts,
             path: opts.path + "/parts/" + idx,
@@ -390,7 +391,7 @@ const dezerializers = {
       }),
     );
   },
-  
+
   symbol: () => z.symbol(),
 
   tuple: ((shape: SzTuple, opts: DezerializerOptions) => {
