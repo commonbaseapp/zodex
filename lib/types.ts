@@ -18,7 +18,7 @@ export type SzBigInt = {
   minInclusive?: boolean;
   maxInclusive?: boolean;
   multipleOf?: string;
-  format?: "int64" | "uint64"
+  format?: "int64" | "uint64";
 };
 
 export const NUMBER_FORMATS = new Set([
@@ -26,7 +26,7 @@ export const NUMBER_FORMATS = new Set([
   "uint32",
   "float32",
   "float64",
-  "safeint"
+  "safeint",
 ] as const);
 
 export const STRING_KINDS = new Set([
@@ -47,7 +47,7 @@ export const STRING_KINDS = new Set([
   "ksuid",
   "json_string",
   "e164",
-  "jwt"
+  "jwt",
 ] as const);
 
 export type SzString = {
@@ -84,9 +84,9 @@ export type SzString = {
         precision?: number;
       }
     | {
-      kind: "jwt",
-      algorithm?: string
-    }
+        kind: "jwt";
+        algorithm?: string;
+      }
     | {
         kind: typeof STRING_KINDS extends Set<infer T> ? T : never;
       }
@@ -135,7 +135,7 @@ export type SzArray<T extends SzType = SzType> = {
 };
 export type SzObject<
   T extends Record<string, SzType> = Record<string, SzType>,
-  U extends SzType = SzType
+  U extends SzType = SzType,
 > = {
   type: "object";
   properties: T;
@@ -152,7 +152,7 @@ export type SzDiscriminatedUnionOption<Discriminator extends string> = {
 } & SzType;
 export type SzDiscriminatedUnion<
   Discriminator extends string = string,
-  Options extends readonly SzDiscriminatedUnionOption<Discriminator>[] = []
+  Options extends readonly SzDiscriminatedUnionOption<Discriminator>[] = [],
 > = {
   type: "discriminatedUnion";
   discriminator: Discriminator;
@@ -160,14 +160,14 @@ export type SzDiscriminatedUnion<
 };
 export type SzIntersection<
   Left extends SzType = SzType,
-  Right extends SzType = SzType
+  Right extends SzType = SzType,
 > = {
   type: "intersection";
   left: Left;
   right: Right;
 };
 export type SzTuple<
-  Items extends [SzType, ...SzType[]] | [] = [SzType, ...SzType[]] | []
+  Items extends [SzType, ...SzType[]] | [] = [SzType, ...SzType[]] | [],
 > = {
   type: "tuple";
   items: Items;
@@ -175,7 +175,7 @@ export type SzTuple<
 };
 export type SzRecord<
   Key extends SzKey = SzKey,
-  Value extends SzType = SzType
+  Value extends SzType = SzType,
 > = {
   type: "record";
   key: Key;
@@ -193,7 +193,9 @@ export type SzSet<T extends SzType = SzType> = {
   maxSize?: number;
 };
 export type SzEnum<
-  Values extends Readonly<Record<string, import('zod/v4/core').util.EnumValue>> = Readonly<Record<string, import('zod/v4/core').util.EnumValue>>
+  Values extends Readonly<
+    Record<string, import("zod/v4/core").util.EnumValue>
+  > = Readonly<Record<string, import("zod/v4/core").util.EnumValue>>,
 > = {
   type: "enum";
   values: Values;
@@ -218,7 +220,7 @@ export type SzPipe<T extends SzType = SzType, U extends SzType = SzType> = {
 
 export type SzTransform = {
   type: "transform";
-  name: string
+  name: string;
 };
 
 // Modifiers
@@ -231,12 +233,16 @@ export type SzReadonly = { readonly: boolean };
 export type SzRef = { $ref: string };
 
 export type SzChecks = {
-  checks: {name: string}[]
+  checks: { name: string }[];
 };
 
 export type SzExtras = Partial<
-  SzNullable & SzOptional & SzDefault<any> & SzDescription & SzReadonly &
-  SzChecks
+  SzNullable &
+    SzOptional &
+    SzDefault<any> &
+    SzDescription &
+    SzReadonly &
+    SzChecks
 >;
 
 // Conjunctions
@@ -268,21 +274,21 @@ export type SzUnionize<T extends SzType | SzRef> =
   | (T extends SzArray<infer T>
       ? SzUnionize<T>
       : T extends SzObject<infer Properties>
-      ? SzUnionize<ValueOf<Properties>>
-      : T extends SzUnion<infer Options>
-      ? SzUnionize<Options[number]>
-      : T extends SzDiscriminatedUnion<infer _D, infer Options>
-      ? SzUnionize<Options[number]>
-      : T extends SzIntersection<infer L, infer R>
-      ? SzUnionize<L | R>
-      : T extends SzTuple<infer Items>
-      ? SzUnionize<Items[number]>
-      : T extends SzRecord<infer _Key, infer Value>
-      ? SzUnionize<Value>
-      : T extends SzMap<infer _Key, infer Value>
-      ? SzUnionize<Value>
-      : T extends SzSet<infer T>
-      ? SzUnionize<T>
-      : T extends SzPromise<infer Value>
-      ? SzUnionize<Value>
-      : never);
+        ? SzUnionize<ValueOf<Properties>>
+        : T extends SzUnion<infer Options>
+          ? SzUnionize<Options[number]>
+          : T extends SzDiscriminatedUnion<infer _D, infer Options>
+            ? SzUnionize<Options[number]>
+            : T extends SzIntersection<infer L, infer R>
+              ? SzUnionize<L | R>
+              : T extends SzTuple<infer Items>
+                ? SzUnionize<Items[number]>
+                : T extends SzRecord<infer _Key, infer Value>
+                  ? SzUnionize<Value>
+                  : T extends SzMap<infer _Key, infer Value>
+                    ? SzUnionize<Value>
+                    : T extends SzSet<infer T>
+                      ? SzUnionize<T>
+                      : T extends SzPromise<infer Value>
+                        ? SzUnionize<Value>
+                        : never);

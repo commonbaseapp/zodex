@@ -18,9 +18,9 @@ export default defineConfig({
       [
         "default",
         {
-          summary: false
-        }
-      ]
+          summary: false,
+        },
+      ],
     ],
   },
 });

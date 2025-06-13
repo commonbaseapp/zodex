@@ -46,7 +46,7 @@ type DezerializerOptions = {
   transforms?: {
     [key: string]: (
       value: unknown,
-      ctx: z.core.ParsePayload
+      ctx: z.core.ParsePayload,
     ) => Promise<unknown> | unknown;
   };
   path: string;
@@ -64,95 +64,137 @@ type OmitKey<T, K> = DistributiveOmit<T, keyof K>;
 export type Dezerialize<T extends SzType | SzRef> = T extends SzRef
   ? any
   : // Modifier types
-  T extends SzOptional
-  ? Dezerialize<OmitKey<T, SzOptional>> extends infer I
-    ? I extends ZodTypes
-      ? // @ts-expect-error Not infinite
-        z.ZodOptional<I>
+    T extends SzOptional
+    ? Dezerialize<OmitKey<T, SzOptional>> extends infer I
+      ? I extends ZodTypes
+        ? // @ts-expect-error Not infinite
+          z.ZodOptional<I>
+        : never
       : never
-    : never
-  : T extends SzNullable
-  ? Dezerialize<OmitKey<T, SzNullable>> extends infer I
-    ? I extends ZodTypes
-      ? z.ZodNullable<I>
-      : never
-    : never
-  : T extends SzReadonly
-  ? Dezerialize<OmitKey<T, SzReadonly>> extends infer I
-    ? I extends ZodTypes
-      ? z.ZodReadonly<I>
-      : never
-    : never
-  : T extends SzDefault<any>
-  ? Dezerialize<OmitKey<T, SzDefault<any>>> extends infer I
-    ? I extends ZodTypes
-      ? z.ZodDefault<I>
-      : never
-    : never // Primitives
-  : T extends SzString
-  ? z.ZodString
-  : T extends SzNumber
-  ? z.ZodNumber
-  : T extends SzBoolean
-  ? z.ZodBoolean
-  : T extends SzBigInt
-  ? z.ZodBigInt
-  : T extends SzNaN
-  ? z.ZodNaN
-  : T extends SzDate
-  ? z.ZodDate
-  : T extends SzUndefined
-  ? z.ZodUndefined
-  : T extends SzNull
-  ? z.ZodNull
-  : T extends SzSymbol
-  ? z.ZodSymbol
-  : T extends SzAny
-  ? z.ZodAny
-  : T extends SzUnknown
-  ? z.ZodUnknown
-  : T extends SzNever
-  ? z.ZodNever
-  : T extends SzVoid
-  ? z.ZodVoid
-  : T extends SzLiteral<infer Value extends z.core.util.Primitive>
-  ? z.ZodLiteral<Value> // List Collections
-  : T extends SzPipe
-  ? z.ZodPipe
-  : T extends SzTransform
-  ? z.ZodTransform
-  : T extends SzTuple<infer _Items>
-  ? z.ZodTuple<any> //DezerializeArray<Items>>
-  : T extends SzSet<infer Value>
-  ? z.ZodSet<Dezerialize<Value>>
-  : T extends SzArray<infer Element>
-  ? z.ZodArray<Dezerialize<Element>> // Key/Value Collections
-  : T extends SzObject<infer Properties>
-  ? z.ZodObject<{
-      [Property in keyof Properties]: Dezerialize<Properties[Property]>;
-    }>
-  : T extends SzRecord<infer Key, infer Value>
-  ? z.ZodRecord<Dezerialize<Key>, Dezerialize<Value>>
-  : T extends SzMap<infer Key, infer Value>
-  ? z.ZodMap<Dezerialize<Key>, Dezerialize<Value>> // Enum
-  : T extends SzEnum<infer Values>
-  ? z.ZodEnum<Values> // Union/Intersection
-  : T extends SzUnion<infer _Options>
-  ? z.ZodUnion<any>
-  : T extends SzDiscriminatedUnion<infer Discriminator, infer _Options>
-  ? z.ZodDiscriminatedUnion<any>
-  : T extends SzIntersection<infer L, infer R>
-  ? z.ZodIntersection<Dezerialize<L>, Dezerialize<R>> // Specials
-  : T extends SzPromise<infer Value>
-  ? z.ZodPromise<Dezerialize<Value>>
-  : T extends SzCatch<infer Value>
-  ? z.ZodCatch<Dezerialize<Value>>
-  : any; // unknown;
+    : T extends SzNullable
+      ? Dezerialize<OmitKey<T, SzNullable>> extends infer I
+        ? I extends ZodTypes
+          ? z.ZodNullable<I>
+          : never
+        : never
+      : T extends SzReadonly
+        ? Dezerialize<OmitKey<T, SzReadonly>> extends infer I
+          ? I extends ZodTypes
+            ? z.ZodReadonly<I>
+            : never
+          : never
+        : T extends SzDefault<any>
+          ? Dezerialize<OmitKey<T, SzDefault<any>>> extends infer I
+            ? I extends ZodTypes
+              ? z.ZodDefault<I>
+              : never
+            : never // Primitives
+          : T extends SzString
+            ? z.ZodString
+            : T extends SzNumber
+              ? z.ZodNumber
+              : T extends SzBoolean
+                ? z.ZodBoolean
+                : T extends SzBigInt
+                  ? z.ZodBigInt
+                  : T extends SzNaN
+                    ? z.ZodNaN
+                    : T extends SzDate
+                      ? z.ZodDate
+                      : T extends SzUndefined
+                        ? z.ZodUndefined
+                        : T extends SzNull
+                          ? z.ZodNull
+                          : T extends SzSymbol
+                            ? z.ZodSymbol
+                            : T extends SzAny
+                              ? z.ZodAny
+                              : T extends SzUnknown
+                                ? z.ZodUnknown
+                                : T extends SzNever
+                                  ? z.ZodNever
+                                  : T extends SzVoid
+                                    ? z.ZodVoid
+                                    : T extends SzLiteral<
+                                          infer Value extends
+                                            z.core.util.Primitive
+                                        >
+                                      ? z.ZodLiteral<Value> // List Collections
+                                      : T extends SzPipe
+                                        ? z.ZodPipe
+                                        : T extends SzTransform
+                                          ? z.ZodTransform
+                                          : T extends SzTuple<infer _Items>
+                                            ? z.ZodTuple<any> //DezerializeArray<Items>>
+                                            : T extends SzSet<infer Value>
+                                              ? z.ZodSet<Dezerialize<Value>>
+                                              : T extends SzArray<infer Element>
+                                                ? z.ZodArray<
+                                                    Dezerialize<Element>
+                                                  > // Key/Value Collections
+                                                : T extends SzObject<
+                                                      infer Properties
+                                                    >
+                                                  ? z.ZodObject<{
+                                                      [Property in keyof Properties]: Dezerialize<
+                                                        Properties[Property]
+                                                      >;
+                                                    }>
+                                                  : T extends SzRecord<
+                                                        infer Key,
+                                                        infer Value
+                                                      >
+                                                    ? z.ZodRecord<
+                                                        Dezerialize<Key>,
+                                                        Dezerialize<Value>
+                                                      >
+                                                    : T extends SzMap<
+                                                          infer Key,
+                                                          infer Value
+                                                        >
+                                                      ? z.ZodMap<
+                                                          Dezerialize<Key>,
+                                                          Dezerialize<Value>
+                                                        > // Enum
+                                                      : T extends SzEnum<
+                                                            infer Values
+                                                          >
+                                                        ? z.ZodEnum<Values> // Union/Intersection
+                                                        : T extends SzUnion<
+                                                              infer _Options
+                                                            >
+                                                          ? z.ZodUnion<any>
+                                                          : T extends SzDiscriminatedUnion<
+                                                                infer Discriminator,
+                                                                infer _Options
+                                                              >
+                                                            ? z.ZodDiscriminatedUnion<any>
+                                                            : T extends SzIntersection<
+                                                                  infer L,
+                                                                  infer R
+                                                                >
+                                                              ? z.ZodIntersection<
+                                                                  Dezerialize<L>,
+                                                                  Dezerialize<R>
+                                                                > // Specials
+                                                              : T extends SzPromise<
+                                                                    infer Value
+                                                                  >
+                                                                ? z.ZodPromise<
+                                                                    Dezerialize<Value>
+                                                                  >
+                                                                : T extends SzCatch<
+                                                                      infer Value
+                                                                    >
+                                                                  ? z.ZodCatch<
+                                                                      Dezerialize<Value>
+                                                                    >
+                                                                  : any; // unknown;
 
 type DezerializersMap = {
   [T in SzType["type"]]: (
     shape: Extract<SzType, { type: T }>,
-    opts: DezerializerOptions
+    opts: DezerializerOptions,
   ) => ZodTypes; //Dezerialize<Extract<SzType, { type: T }>>;
 };
 
@@ -168,7 +210,7 @@ function checkRef(item: SzType, opts: DezerializerOptions) {
 const getCustomChecks = (
   base: ZodTypes,
   shape: SzType,
-  opts: DezerializerOptions
+  opts: DezerializerOptions,
 ) => {
   if ("checks" in shape && opts.checks) {
     for (const check of shape.checks as { name: string }[]) {
@@ -325,7 +367,7 @@ const dezerializers = {
             path: opts.path + "/items/" + idx,
           })
         );
-      }) as any
+      }) as any,
     );
 
     if (shape.rest) {
@@ -348,7 +390,7 @@ const dezerializers = {
         d(shape.value, {
           ...opts,
           path: opts.path + "/value",
-        })
+        }),
     );
     if (shape.minSize !== undefined) {
       i = i.min(shape.minSize);
@@ -365,7 +407,7 @@ const dezerializers = {
         d(shape.element, {
           ...opts,
           path: opts.path + "/element",
-        })
+        }),
     );
     if (shape.minLength !== undefined) {
       i = i.min(shape.minLength);
@@ -389,8 +431,8 @@ const dezerializers = {
                 path: opts.path + "/properties/" + key,
               }),
           ];
-        })
-      )
+        }),
+      ),
     ) as z.ZodObject<{
       [k: string]: ZodTypes;
     }>;
@@ -413,7 +455,7 @@ const dezerializers = {
         d(shape.value, {
           ...opts,
           path: opts.path + "/value",
-        })
+        }),
     );
     opts.pathToSchema.set(opts.path, i);
     return getCustomChecks(i, shape, opts);
@@ -429,7 +471,7 @@ const dezerializers = {
         d(shape.value, {
           ...opts,
           path: opts.path + "/value",
-        })
+        }),
     );
 
     opts.pathToSchema.set(opts.path, i);
@@ -446,15 +488,15 @@ const dezerializers = {
           d(opt, {
             ...opts,
             path: opts.path + "/options/" + idx,
-          })
-      ) as any
+          }),
+      ) as any,
     );
     opts.pathToSchema.set(opts.path, i);
     return getCustomChecks(i, shape, opts);
   }) as any,
   discriminatedUnion: ((
     shape: SzDiscriminatedUnion,
-    opts: DezerializerOptions
+    opts: DezerializerOptions,
   ) => {
     const i = z.discriminatedUnion(
       shape.discriminator,
@@ -464,8 +506,8 @@ const dezerializers = {
           d(opt, {
             ...opts,
             path: opts.path + "/options/" + idx,
-          })
-      ) as any
+          }),
+      ) as any,
     );
     opts.pathToSchema.set(opts.path, i);
     return getCustomChecks(i, shape, opts);
@@ -481,7 +523,7 @@ const dezerializers = {
         d(shape.right, {
           ...opts,
           path: opts.path + "/right",
-        })
+        }),
     );
 
     opts.pathToSchema.set(opts.path, i);
@@ -494,7 +536,7 @@ const dezerializers = {
         d(shape.value, {
           ...opts,
           path: opts.path + "/value",
-        })
+        }),
     );
     opts.pathToSchema.set(opts.path, i);
     return i;
@@ -514,7 +556,7 @@ const dezerializers = {
   transform: (shape: SzTransform, opts: DezerializerOptions) => {
     if (!opts.transforms || !(shape.name in opts.transforms)) {
       throw new Error(
-        "Must supply transforms for the given transform name, " + shape.name
+        "Must supply transforms for the given transform name, " + shape.name,
       );
     }
     return z.transform(opts.transforms[shape.name]);
@@ -533,10 +575,10 @@ const dezerializers = {
         d(shape.outer, {
           ...opts,
           path: opts.path + "/outer",
-        })
+        }),
       ) as z.ZodPipe<ZodTypes, ZodTypes>,
       shape,
-      opts
+      opts,
     );
   },
 } satisfies DezerializersMap as DezerializersMap;
@@ -545,7 +587,7 @@ const dezerializers = {
 // export function dezerialize<T extends SzType>(shape: T, opts?: DezerializerOptions): Dezerialize<T> {
 export function dezerializeRefs(
   shape: SzType,
-  opts: DezerializerOptions
+  opts: DezerializerOptions,
 ): ZodTypes {
   if ("isOptional" in shape) {
     const { isOptional, ...rest } = shape;
@@ -570,8 +612,8 @@ export function dezerializeRefs(
       shape.type === "bigInt"
         ? BigInt(defaultValue)
         : shape.type === "date"
-        ? new Date(defaultValue)
-        : defaultValue
+          ? new Date(defaultValue)
+          : defaultValue,
     );
     opts.pathToSchema.set(opts.path, result);
     return result;
@@ -607,7 +649,7 @@ function resolvePointer(obj: any, pointer: string): any {
 
 export function dezerialize(
   shape: SzType,
-  opts: Partial<DezerializerOptions> = {}
+  opts: Partial<DezerializerOptions> = {},
 ): ZodTypes {
   if (!("path" in opts)) {
     opts.path = "#";

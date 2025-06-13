@@ -51,7 +51,7 @@ type Shape = {
         count: { type: "number"; isOptional: true };
       };
     },
-    { type: "object"; properties: { id: { type: "literal"; values: ["b"] } } }
+    { type: "object"; properties: { id: { type: "literal"; values: ["b"] } } },
   ];
 };
 ```

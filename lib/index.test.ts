@@ -6,16 +6,16 @@ import { SzCatch, SzEnum } from "./types";
 import { dezerialize, SzType, zerialize, Zerialize } from "./index";
 
 const zodexSchemaJSON = JSON.parse(
-  fs.readFileSync("./schema.zodex.json", "utf-8")
+  fs.readFileSync("./schema.zodex.json", "utf-8"),
 );
 const zodexSchema = dezerialize(zodexSchemaJSON);
 
 const p = <
   Schema extends z.ZodFirstPartySchemaTypes,
-  Shape extends SzType = Zerialize<Schema>
+  Shape extends SzType = Zerialize<Schema>,
 >(
   schema: Schema,
-  shape: Shape
+  shape: Shape,
 ): [Schema, Shape] => [schema, shape];
 
 enum Fruits {
@@ -176,7 +176,7 @@ test.each([
 
   p(
     z.string().default(() => "foo"),
-    { type: "string", defaultValue: "foo" }
+    { type: "string", defaultValue: "foo" },
   ),
   p(z.string().default("foo"), { type: "string", defaultValue: "foo" }),
   p(z.bigint().default(123n), { type: "bigInt", defaultValue: "123" }),
@@ -423,7 +423,7 @@ test.each([
           type: "string",
         },
       },
-    }
+    },
   ),
 
   p(
@@ -440,14 +440,14 @@ test.each([
           type: "string",
         },
       },
-    }
+    },
   ),
 
   p(z.promise(z.string()), { type: "promise", value: { type: "string" } }),
 
   p(
     z.lazy(() => z.string().refine(() => true)),
-    { type: "string" }
+    { type: "string" },
   ),
 
   p(z.number().catch(23).pipe(z.literal(42)), {
@@ -539,7 +539,7 @@ test("discriminated union", () => {
   // }>();
 
   expect(
-    (dezerialize(shape as SzType) as z.ZodDefault<any>).def.defaultValue
+    (dezerialize(shape as SzType) as z.ZodDefault<any>).def.defaultValue,
   ).toEqual({
     name: "Lea",
     reach: 42,
@@ -586,7 +586,7 @@ test("coerce (date)", () => {
     coerce: true,
   });
   expect(dezerialize(shape as SzType).parse("1999-01-01")).toEqual(
-    new Date("1999-01-01")
+    new Date("1999-01-01"),
   );
   const parsed = zodexSchema.safeParse(shape);
   expect(parsed.success).to.equal(true);
@@ -823,19 +823,19 @@ test("named checks and transforms", () => {
   // @ts-expect-error BCE arg is deliberately bad
   const dezSchema = dezerialize(serialized, { checks, transforms });
   const res1 = dezSchema.safeParse(
-    new Date(new Date().getTime() + 10000000)
+    new Date(new Date().getTime() + 10000000),
   ) as z.ZodSafeParseError<Date>;
 
   expect(res1.success).to.equal(false);
 
   const res2 = dezSchema.safeParse(
-    new Date("1969-01-01")
+    new Date("1969-01-01"),
   ) as z.ZodSafeParseError<Date>;
 
   expect(res2.success).to.equal(false);
 
   const res3 = dezSchema.safeParse(
-    new Date("2050-01-01")
+    new Date("2050-01-01"),
   ) as z.ZodSafeParseError<Date>;
 
   expect(res3.success).to.equal(false);
@@ -880,7 +880,7 @@ test("dezerialize checks without options", () => {
   const dezSchema = dezerialize(serialized);
 
   const res1 = dezSchema.safeParse(
-    new Date(new Date().getTime() + 10000000)
+    new Date(new Date().getTime() + 10000000),
   ) as z.ZodSafeParseSuccess<Date>;
 
   expect(res1.success).to.equal(true);
@@ -1082,7 +1082,7 @@ test("Object with inner $ref", () => {
   const zer = zerialize(schema);
   expect(zer).toEqual(shape);
   expect(zerialize(dezerialize(shape as any) as any)).toEqual(
-    zerialize(schema)
+    zerialize(schema),
   );
   const parsed = zodexSchema.safeParse(shape);
   expect(parsed.success).to.equal(true);
@@ -1115,18 +1115,18 @@ test("Large object with inner $ref", () => {
                         z.object({}),
                         z.intersection(
                           z.promise(categorySchemaNested),
-                          z.object({})
-                        )
+                          z.object({}),
+                        ),
                       ),
                     }),
                   ]),
                   z.number(),
-                ])
-              )
-            )
-          )
-        )
-      )
+                ]),
+              ),
+            ),
+          ),
+        ),
+      ),
     ),
   ]);
   const shape = {
@@ -1244,7 +1244,7 @@ test("Large object with inner $ref", () => {
   const zer = zerialize(schema);
   expect(zer).toEqual(shape);
   expect(zerialize(dezerialize(shape as any) as any)).toEqual(
-    zerialize(schema)
+    zerialize(schema),
   );
   const parsed = zodexSchema.safeParse(shape);
   expect(parsed.success).to.equal(true);
@@ -1260,7 +1260,7 @@ test("Nested recursion", () => {
       profileContact: idSchema.optional(),
       and: z.array(recursiveSchema).optional(),
       or: z.array(recursiveSchema).optional(),
-    })
+    }),
   );
 
   const idSchema = z
