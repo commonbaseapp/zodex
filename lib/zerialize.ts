@@ -114,7 +114,13 @@ export type Zerialize<T extends ZodTypes> =
                                   : Key extends z.ZodSymbol
                                     ? SzSymbol & SzExtras
                                     : Key extends z.ZodLiteral<
-                                          infer L extends string | number
+                                          infer L extends
+                                            | string
+                                            | number
+                                            | bigint
+                                            | boolean
+                                            | null
+                                            | undefined
                                         >
                                       ? SzLiteral<L> & SzExtras
                                       : Key extends z.ZodEnum<infer E>
@@ -134,7 +140,13 @@ export type Zerialize<T extends ZodTypes> =
                                     : Key extends z.ZodSymbol
                                       ? SzSymbol & SzExtras
                                       : Key extends z.ZodLiteral<
-                                            infer L extends string | number
+                                            infer L extends
+                                              | string
+                                              | number
+                                              | bigint
+                                              | boolean
+                                              | null
+                                              | undefined
                                           >
                                         ? SzLiteral<L> & SzExtras
                                         : Key extends z.ZodEnum<infer E>

@@ -500,6 +500,18 @@
                     },
                     {
                       "type": "string"
+                    },
+                    {
+                      "type": "bigInt"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "undefined"
                     }
                   ]
                 }

@@ -113,7 +113,7 @@ export type Dezerialize<T extends SzType | SzRef> = T extends SzRef
                                     ? z.ZodVoid
                                     : T extends SzLiteral<
                                           infer Value extends
-                                            z.core.util.Primitive
+                                            z.core.util.Literal
                                         >
                                       ? z.ZodLiteral<Value> // List Collections
                                       : T extends SzPipe
