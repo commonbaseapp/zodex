@@ -47,6 +47,11 @@ export const STRING_KINDS = new Set([
   "e164",
   "jwt",
 
+  "ipv4",
+  "ipv6",
+  "cidrv4",
+  "cidrv6",
+  "e164",
   // "uuidv8", // In docs only
   // "ascii", // In docs only
   // "utf8", // In docs only
@@ -170,12 +175,12 @@ export type SzUnion<Options extends [SzType, ...SzType[]] = [SzType]> = {
   type: "union";
   options: Options;
 };
-export type SzDiscriminatedUnionOption<Discriminator extends string> = {
-  [key in Discriminator]: SzType;
-} & SzType;
+export type SzDiscriminatedUnionOption<Discriminator extends string> = SzObject<
+  Record<string, SzType>
+>;
 export type SzDiscriminatedUnion<
   Discriminator extends string = string,
-  Options extends readonly SzDiscriminatedUnionOption<Discriminator>[] = [],
+  Options extends readonly SzType[] = readonly SzType[],
 > = {
   type: "discriminatedUnion";
   discriminator: Discriminator;
@@ -269,7 +274,14 @@ export type SzExtras = Partial<
 >;
 
 // Conjunctions
-export type SzKey = (SzString | SzNumber | SzSymbol) & SzExtras;
+export type SzKey = (
+  | SzString
+  | SzNumber
+  | SzSymbol
+  | SzLiteral<string | number | symbol>
+  | SzEnum<any>
+) &
+  SzExtras;
 export type SzDefaultOrNullable = SzDefault<any> | SzNullable;
 
 export type SzType = (

@@ -67,8 +67,7 @@ export type Dezerialize<T extends SzType | SzRef> = T extends SzRef
     T extends SzOptional
     ? Dezerialize<OmitKey<T, SzOptional>> extends infer I
       ? I extends ZodTypes
-        ? // @ts-expect-error Not infinite
-          z.ZodOptional<I>
+        ? z.ZodOptional<I>
         : never
       : never
     : T extends SzNullable
@@ -242,19 +241,6 @@ const dezerializers = {
     }
     return getCustomChecks(n, shape, opts);
   },
-  templateLiteral: (shape, opts) => {
-    return z.templateLiteral(
-      shape.parts.map((part, idx) => {
-        return typeof part == "string"
-          ? part
-          : checkRef(part, opts) ||
-              d(part, {
-                ...opts,
-                path: opts.path + "/parts/" + idx,
-              });
-      }),
-    );
-  },
   string: (shape, opts) => {
     let s = shape.coerce ? z.coerce.string() : z.string();
     if (shape.min !== undefined) {
@@ -332,12 +318,7 @@ const dezerializers = {
 
     return getCustomChecks(s, shape, opts);
   },
-  boolean: (shape) =>
-    shape.coerce
-      ? // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- Sometimes
-        // @ts-ignore Not infinite
-        z.coerce.boolean()
-      : z.boolean(),
+  boolean: (shape) => (shape.coerce ? z.coerce.boolean() : z.boolean()),
   nan: () => z.nan(),
   bigInt: (shape, opts) => {
     const method =
@@ -392,7 +373,24 @@ const dezerializers = {
   void: () => z.void(),
 
   literal: (shape) => z.literal(shape.values),
-
+  templateLiteral: (shape, opts) => {
+    return z.templateLiteral(
+      shape.parts.map((part, idx) => {
+        if (typeof part === "string") {
+          return part;
+        }
+        const schema = checkRef(part, opts) ||
+          d(part, {
+            ...opts,
+            path: opts.path + "/parts/" + idx,
+          });
+        // In Zod 4, template literal parts must have a defined pattern property.
+        // We cast to the expected type since we know the runtime behavior is correct.
+        return schema as z.core.$ZodTemplateLiteralPart;
+      }),
+    );
+  },
+  
   symbol: () => z.symbol(),
 
   tuple: ((shape: SzTuple, opts: DezerializerOptions) => {
@@ -421,8 +419,6 @@ const dezerializers = {
     return getCustomChecks(i, shape, opts);
   }) as any,
   set: ((shape: SzSet, opts: DezerializerOptions) => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- Sometimes
-    // @ts-ignore Not infinite
     let i = z.set(
       checkRef(shape.value, opts) ||
         d(shape.value, {
@@ -607,8 +603,6 @@ const dezerializers = {
       })) as z.ZodType;
 
     return getCustomChecks(
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- Sometimes
-      // @ts-ignore Not infinite
       base.pipe(
         d(shape.outer, {
           ...opts,
@@ -707,7 +701,7 @@ export function dezerialize(
   const dez = dezerializeRefs(shape, options);
 
   for (const [lazy, $ref] of options.$refs) {
-    lazy.def.getter = () => {
+    lazy._zod.def.getter = () => {
       const schema = options.pathToSchema.get($ref);
       if (schema) {
         return schema;
