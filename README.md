@@ -82,16 +82,17 @@ options:
 ## Options
 
 Both `zerialize` and `dezerialize` accept an options object with the
-same `checks` and `transforms` properties.
+same `errors`, `checks`, and `transforms` properties.
 
-Since Zod does not allow the specification of the names of checks and
+Since Zod does not allow the specification of the names of errors, checks and
 transforms (and preprocesses), we allow you to supply
-as options maps of names to checks/transforms so that these can be part of
-serialization and deserialization. If none of these options are
-supplied, the checks/transforms will be omitted.
+as options maps of names to errors/checks/transforms so that these can be part
+of serialization and deserialization. If none of these options are
+supplied, the errors/checks/transforms will be omitted.
 
 Properties:
 
+- `errors` - Map of name to `.someType({error: fn})` functions
 - `checks` - Map of name to `.checks()` functions
 - `transforms` - Map of name to `.transform()` (and `.preprocess`) functions
 
@@ -127,10 +128,6 @@ Note that due to technical limitations with Zod, we are unable to allow a
 JSON reference in place of an object `properties` object. You can either
 resolve this first with another library (if it is a non-cyclic reference),
 or target the whole object or individual properties.
-
-## Roadmap
-
-- custom error messages are not included
 
 ## Caveats
 

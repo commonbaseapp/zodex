@@ -40,6 +40,9 @@ import {
 import { ZodTypes } from "./zod-types";
 
 type DezerializerOptions = {
+  errors?: {
+    [key: string]: z.core.$ZodErrorMap;
+  };
   checks?: {
     [key: string]: (ctx: z.core.ParsePayload) => Promise<void> | void;
   };
@@ -216,6 +219,14 @@ const getCustomChecks = (
   return base;
 };
 
+const getError = (shape: SzType, opts: DezerializerOptions) => {
+  return typeof shape.error == "string"
+    ? shape.error
+    : shape.error && opts.errors
+      ? { error: opts.errors[shape.error.key] }
+      : undefined;
+};
+
 const d = dezerializeRefs;
 
 const dezerializers = {
@@ -226,7 +237,9 @@ const dezerializers = {
           ? "int"
           : shape.format
         : "number";
-    let n = shape.coerce ? z.coerce.number() : z[method]();
+    let n = shape.coerce
+      ? z.coerce.number(getError(shape, opts))
+      : z[method](getError(shape, opts));
     if (shape.min !== undefined) {
       n = shape.minInclusive ? n.min(shape.min) : n.gt(shape.min);
     }
@@ -239,7 +252,9 @@ const dezerializers = {
     return getCustomChecks(n, shape, opts);
   },
   string: (shape, opts) => {
-    let s = shape.coerce ? z.coerce.string() : z.string();
+    let s = shape.coerce
+      ? z.coerce.string(getError(shape, opts))
+      : z.string(getError(shape, opts));
     if (shape.min !== undefined) {
       s = s.min(shape.min);
     }
@@ -315,14 +330,19 @@ const dezerializers = {
 
     return getCustomChecks(s, shape, opts);
   },
-  boolean: (shape) => (shape.coerce ? z.coerce.boolean() : z.boolean()),
-  nan: () => z.nan(),
+  boolean: (shape, opts) =>
+    shape.coerce
+      ? z.coerce.boolean(getError(shape, opts))
+      : z.boolean(getError(shape, opts)),
+  nan: (shape, opts) => z.nan(getError(shape, opts)),
   bigInt: (shape, opts) => {
     const method =
       shape.format && ["uint64", "int64"].includes(shape.format)
         ? shape.format
         : "bigint";
-    let i = shape.coerce ? z.coerce.bigint() : z[method]();
+    let i = shape.coerce
+      ? z.coerce.bigint(getError(shape, opts))
+      : z[method](getError(shape, opts));
     if (shape.min !== undefined) {
       const min = BigInt(shape.min);
       i = shape.minInclusive ? i.min(min) : i.gt(min);
@@ -337,8 +357,8 @@ const dezerializers = {
     }
     return getCustomChecks(i, shape, opts);
   },
-  file: (shape) => {
-    let i = z.file();
+  file: (shape, opts) => {
+    let i = z.file(getError(shape, opts));
 
     if (shape.max) {
       i = i.max(shape.max);
@@ -353,7 +373,9 @@ const dezerializers = {
     return i;
   },
   date: (shape, opts) => {
-    let i = shape.coerce ? z.coerce.date() : z.date();
+    let i = shape.coerce
+      ? z.coerce.date(getError(shape, opts))
+      : z.date(getError(shape, opts));
     if (shape.min !== undefined) {
       i = i.min(new Date(shape.min));
     }
@@ -362,14 +384,14 @@ const dezerializers = {
     }
     return getCustomChecks(i, shape, opts);
   },
-  undefined: () => z.undefined(),
-  null: () => z.null(),
+  undefined: (shape, opts) => z.undefined(getError(shape, opts)),
+  null: (shape, opts) => z.null(getError(shape, opts)),
   any: () => z.any(),
   unknown: () => z.unknown(),
-  never: () => z.never(),
-  void: () => z.void(),
+  never: (shape, opts) => z.never(getError(shape, opts)),
+  void: (shape, opts) => z.void(getError(shape, opts)),
 
-  literal: (shape) => z.literal(shape.values),
+  literal: (shape, opts) => z.literal(shape.values, getError(shape, opts)),
   templateLiteral: (shape, opts) => {
     return z.templateLiteral(
       shape.parts.map((part, idx) => {
@@ -386,10 +408,11 @@ const dezerializers = {
         // We cast to the expected type since we know the runtime behavior is correct.
         return schema as z.core.$ZodTemplateLiteralPart;
       }),
+      getError(shape, opts),
     );
   },
 
-  symbol: () => z.symbol(),
+  symbol: (shape, opts) => z.symbol(getError(shape, opts)),
 
   tuple: ((shape: SzTuple, opts: DezerializerOptions) => {
     let i = z.tuple(
@@ -402,6 +425,7 @@ const dezerializers = {
           })
         );
       }) as any,
+      getError(shape, opts),
     );
 
     if (shape.rest) {
@@ -423,6 +447,7 @@ const dezerializers = {
           ...opts,
           path: opts.path + "/value",
         }),
+      getError(shape, opts),
     );
     if (shape.minSize !== undefined) {
       i = i.min(shape.minSize);
@@ -440,6 +465,7 @@ const dezerializers = {
           ...opts,
           path: opts.path + "/element",
         }),
+      getError(shape, opts),
     );
     if (shape.minLength !== undefined) {
       i = i.min(shape.minLength);
@@ -465,6 +491,7 @@ const dezerializers = {
           ];
         }),
       ),
+      getError(shape, opts),
     ) as z.ZodObject<{
       [k: string]: ZodTypes;
     }>;
@@ -488,6 +515,7 @@ const dezerializers = {
           ...opts,
           path: opts.path + "/value",
         }),
+      getError(shape, opts),
     );
     opts.pathToSchema.set(opts.path, i);
     return getCustomChecks(i, shape, opts);
@@ -504,13 +532,15 @@ const dezerializers = {
           ...opts,
           path: opts.path + "/value",
         }),
+      getError(shape, opts),
     );
 
     opts.pathToSchema.set(opts.path, i);
     return getCustomChecks(i, shape, opts);
   }) as any,
 
-  enum: ((shape: SzEnum) => z.enum(shape.values)) as any,
+  enum: ((shape: SzEnum, opts: DezerializerOptions) =>
+    z.enum(shape.values, getError(shape, opts))) as any,
 
   union: ((shape: SzUnion, opts: DezerializerOptions) => {
     const i = z.union(
@@ -522,6 +552,7 @@ const dezerializers = {
             path: opts.path + "/options/" + idx,
           }),
       ) as any,
+      getError(shape, opts),
     );
     opts.pathToSchema.set(opts.path, i);
     return getCustomChecks(i, shape, opts);
@@ -540,6 +571,7 @@ const dezerializers = {
             path: opts.path + "/options/" + idx,
           }),
       ) as any,
+      getError(shape, opts),
     );
     opts.pathToSchema.set(opts.path, i);
     return getCustomChecks(i, shape, opts);

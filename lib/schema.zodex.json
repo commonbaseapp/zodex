@@ -292,6 +292,23 @@
           },
           "isOptional": true
         },
+        "error": {
+          "type": "union",
+          "options": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                }
+              }
+            }
+          ],
+          "isOptional": true
+        },
         "isNullable": { "type": "boolean", "isOptional": true },
         "isOptional": { "type": "boolean", "isOptional": true },
         "defaultValue": {

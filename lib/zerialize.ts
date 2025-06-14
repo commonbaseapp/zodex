@@ -22,7 +22,7 @@ import {
   SzPrimitive,
   SzType,
   // SzUnknown,
-  NUMBER_FORMATS,
+  // NUMBER_FORMATS,
   STRING_KINDS,
   SzRef,
   SzString,
@@ -247,6 +247,9 @@ type ZodTypeMap = {
 };
 
 type ZerializerOptions = {
+  errors?: {
+    [key: string]: z.core.$ZodErrorMap;
+  };
   checks?: {
     [key: string]: (ctx: z.core.ParsePayload<any>) => Promise<void> | void;
   };
@@ -264,8 +267,11 @@ type ZerializersMap = {
   ) => any; //Zerialize<ZodTypeMap[Key]>;
 };
 
-const getCustomChecks = (
-  def: { checks?: z.core.$ZodCheck[] },
+const getCustomChecksAndErrors = (
+  def: {
+    checks?: z.core.$ZodCheck[];
+    error?: any;
+  },
   opts: ZerializerOptions,
 ) => {
   let customChecks = null;
@@ -292,7 +298,23 @@ const getCustomChecks = (
       .filter(Boolean);
   }
 
-  return customChecks ? { checks: customChecks } : {};
+  let customError;
+  if ("error" in def) {
+    const key = Object.entries(opts.errors ?? {}).find(([, func]) => {
+      return func === def.error;
+    })?.[0];
+    customError =
+      typeof key == "string"
+        ? { key }
+        : // Not supplying an issue should not be a problem for regular
+          //   wrapped string errors
+          def.error();
+  }
+
+  return Object.assign(
+    customChecks ? { checks: customChecks } : {},
+    customError ? { error: customError } : {},
+  );
 };
 
 const s = zerializeRefs as any;
@@ -350,7 +372,7 @@ const zerializers = {
       {
         type: "number",
         ...checks,
-        ...getCustomChecks(def, opts),
+        ...getCustomChecksAndErrors(def, opts),
         // Check is on `def` itself
         ...("check" in def && def.check === "number_format" && "format" in def
           ? { format: def.format }
@@ -444,7 +466,7 @@ const zerializers = {
       {
         type: "string",
         ...checks,
-        ...getCustomChecks(def, opts),
+        ...getCustomChecksAndErrors(def, opts),
         // Check is on `def` itself
         ...(format == "ipv4"
           ? { kind: "ip", version: "v4" }
@@ -548,7 +570,7 @@ const zerializers = {
       {
         type: "bigInt",
         ...checks,
-        ...getCustomChecks(def, opts),
+        ...getCustomChecksAndErrors(def, opts),
         // Check is on `def` itself
         ...("check" in def && def.check === "bigint_format" && "format" in def
           ? { format: def.format }
@@ -613,7 +635,7 @@ const zerializers = {
     }, {});
 
     return Object.assign(
-      { type: "date", ...checks, ...getCustomChecks(def, opts) },
+      { type: "date", ...checks, ...getCustomChecksAndErrors(def, opts) },
       def.coerce ? { coerce: true } : {},
     );
   },
@@ -628,7 +650,7 @@ const zerializers = {
 
   tuple: (def, opts) => ({
     type: "tuple",
-    ...getCustomChecks(def, opts),
+    ...getCustomChecksAndErrors(def, opts),
     items: def.items.map((item: ZodTypes, idx: number) => {
       const result = s(item, {
         ...opts,
@@ -673,7 +695,7 @@ const zerializers = {
         ...opts,
         currentPath: [...opts.currentPath, "value"],
       }),
-      ...getCustomChecks(def, opts),
+      ...getCustomChecksAndErrors(def, opts),
       ...checks,
     };
   },
@@ -707,7 +729,7 @@ const zerializers = {
         ...opts,
         currentPath: [...opts.currentPath, "element"],
       }),
-      ...getCustomChecks(def, opts),
+      ...getCustomChecksAndErrors(def, opts),
       ...checks,
     };
   },
@@ -715,7 +737,7 @@ const zerializers = {
   object: (def, opts) => {
     return {
       type: "object",
-      ...getCustomChecks(def, opts),
+      ...getCustomChecksAndErrors(def, opts),
       ...(!def.catchall
         ? {}
         : {
@@ -737,7 +759,7 @@ const zerializers = {
   },
   record: (def, opts) => ({
     type: "record",
-    ...getCustomChecks(def, opts),
+    ...getCustomChecksAndErrors(def, opts),
     key: s(def.keyType, {
       ...opts,
       currentPath: [...opts.currentPath, "key"],
@@ -749,7 +771,7 @@ const zerializers = {
   }),
   map: (def, opts) => ({
     type: "map",
-    ...getCustomChecks(def, opts),
+    ...getCustomChecksAndErrors(def, opts),
     key: s(def.keyType, {
       ...opts,
       currentPath: [...opts.currentPath, "key"],
@@ -770,7 +792,7 @@ const zerializers = {
             discriminator: def.discriminator,
           }
         : {}),
-      ...getCustomChecks(def, opts),
+      ...getCustomChecksAndErrors(def, opts),
       options: def.options.map((opt, idx) => {
         const result = s(opt, {
           ...opts,
@@ -782,7 +804,7 @@ const zerializers = {
   },
   intersection: (def, opts) => ({
     type: "intersection",
-    ...getCustomChecks(def, opts),
+    ...getCustomChecksAndErrors(def, opts),
     left: s(def.left, {
       ...opts,
       currentPath: [...opts.currentPath, "left"],
@@ -841,7 +863,7 @@ const zerializers = {
 
     return {
       type: "pipe",
-      ...getCustomChecks(def, opts),
+      ...getCustomChecksAndErrors(def, opts),
       inner: s(def.in, opts),
       outer: s(def.out, opts),
     };

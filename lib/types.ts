@@ -260,6 +260,10 @@ export type SzReadonly = { readonly: boolean };
 
 export type SzRef = { $ref: string };
 
+export type SzError = {
+  error: string | { key: string };
+};
+
 export type SzChecks = {
   checks: { name: string }[];
 };
@@ -270,6 +274,7 @@ export type SzExtras = Partial<
     SzDefault<any> &
     SzDescription &
     SzReadonly &
+    SzError &
     SzChecks
 >;
 

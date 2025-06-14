@@ -75,6 +75,10 @@ test.each([
     },
   }),
   p(z.string(), { type: "string" }),
+  p(z.string({ error: "Not a string" }), {
+    type: "string",
+    error: "Not a string",
+  }),
 
   p(z.string().regex(/sth/), { type: "string", regex: "sth" }),
   p(z.string().min(3).max(7).regex(/sth/u), {
@@ -512,6 +516,37 @@ test.each([
 ])("isOptional/isNullable/readonly", (schema, shape) => {
   expect(zerialize(dezerialize(shape) as any)).toEqual(zerialize(schema));
   const parsed = zodexSchema.safeParse(shape);
+  expect(parsed.success).to.equal(true);
+});
+
+test("custom errors", () => {
+  const errors = {
+    someKey: () => {
+      return "Bad value";
+    },
+  };
+  const schema = z.string({ error: errors.someKey });
+
+  const expectedShape = {
+    type: "string",
+    error: {
+      key: "someKey",
+    },
+  };
+
+  const shape = zerialize(schema, { errors });
+  expect(shape).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(shape, { errors });
+
+  const dezParsed = dezSchema.safeParse(3);
+  expect(dezParsed.success).to.equal(false);
+  expect(dezParsed?.error?.issues[0].message).to.equal("Bad value");
+
+  const reserialized = zerialize(dezSchema, { errors });
+  expect(reserialized).toEqual(expectedShape);
+
+  const parsed = zodexSchema.safeParse(expectedShape);
   expect(parsed.success).to.equal(true);
 });
 
