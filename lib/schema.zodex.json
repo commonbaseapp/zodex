@@ -173,6 +173,7 @@
                   "type": "enum",
                   "values": {
                     "jwt": "jwt",
+                    "xid": "xid",
                     "url": "url",
                     "emoji": "emoji",
                     "e164": "e164",
