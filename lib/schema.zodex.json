@@ -174,6 +174,8 @@
                   "values": {
                     "jwt": "jwt",
                     "xid": "xid",
+                    "guid": "guid",
+                    "ksuid": "ksuid",
                     "url": "url",
                     "emoji": "emoji",
                     "e164": "e164",
