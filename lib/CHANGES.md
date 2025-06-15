@@ -10,6 +10,7 @@ Breaking changes:
 - fix: remove function type
 - fix: remove nativeEnum type
 - fix: represent `enum` type as object instead of array, with number as well as string keys and values
+- fix: disallow other properties with JSON references (per spec)
 
 Other changes:
 
