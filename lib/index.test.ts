@@ -115,6 +115,10 @@ test.each([
   p(z.cidrv6(), { type: "string", kind: "cidr", version: "v6" }),
   p(z.e164(), { type: "string", kind: "e164" }),
 
+  p(z.guid(), { type: "string", kind: "guid" }),
+  p(z.ksuid(), { type: "string", kind: "ksuid" }),
+  // p(z.json_string(), { type: "string", kind: "json_string" }),
+
   p(z.jwt(), { type: "string", kind: "jwt" }),
   p(z.jwt({ alg: "RS512" }), {
     type: "string",
