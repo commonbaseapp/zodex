@@ -23,3 +23,4 @@ Other changes:
 - feat: add `version` property for `uuid`
 - feat: add to literals: bigInt, boolean, null, and undefined types
 - feat: bump `type-fest` and `zod` dependencies
+- fix: allow any type as Map key
