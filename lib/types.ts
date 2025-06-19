@@ -209,7 +209,7 @@ export type SzRecord<
   key: Key;
   value: Value;
 };
-export type SzMap<Key extends SzKey, Value extends SzType> = {
+export type SzMap<Key extends SzType, Value extends SzType> = {
   type: "map";
   key: Key;
   value: Value;

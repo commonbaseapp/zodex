@@ -434,6 +434,11 @@ test.each([
     key: { type: "number" },
     value: { type: "string" },
   }),
+  p(z.map(z.object(), z.string()), {
+    type: "map",
+    key: { type: "object", properties: {} },
+    value: { type: "string" },
+  }),
 
   p(z.enum(["foo", "bar"]), {
     type: "enum",

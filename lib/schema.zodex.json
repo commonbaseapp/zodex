@@ -682,7 +682,7 @@
                 "values": ["map"]
               },
               "key": {
-                "$ref": "#/$defs/key"
+                "$ref": "#/$defs/reference-or-type"
               },
               "value": {
                 "$ref": "#/$defs/reference-or-type"

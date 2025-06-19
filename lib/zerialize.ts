@@ -133,25 +133,7 @@ export type Zerialize<T extends ZodTypes> =
                                 infer Value extends SomeType
                               >
                             ? SzMap<
-                                Key extends z.ZodString
-                                  ? SzString & SzExtras
-                                  : Key extends z.ZodNumber
-                                    ? SzNumber & SzExtras
-                                    : Key extends z.ZodSymbol
-                                      ? SzSymbol & SzExtras
-                                      : Key extends z.ZodLiteral<
-                                            infer L extends
-                                              | string
-                                              | number
-                                              | bigint
-                                              | boolean
-                                              | null
-                                              | undefined
-                                          >
-                                        ? SzLiteral<L> & SzExtras
-                                        : Key extends z.ZodEnum<infer E>
-                                          ? SzEnum<E> & SzExtras
-                                          : SzKey,
+                                Key extends ZodTypes ? Zerialize<Key> : SzType,
                                 Value extends ZodTypes
                                   ? Zerialize<Value>
                                   : SzType

@@ -15,7 +15,7 @@ import {
   SzSet,
   SzEnum,
   SzPromise,
-  SzRef,
+  // SzRef,
 } from "./types";
 
 type PrimitiveTypes = {
