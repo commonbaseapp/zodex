@@ -11,6 +11,7 @@ Breaking changes:
 - fix: remove nativeEnum type
 - fix: represent `enum` type as object instead of array, with number as well as string keys and values
 - fix: disallow other properties with JSON references (per spec)
+- feat: adds `exports`
 
 Other changes:
 

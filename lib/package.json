@@ -5,6 +5,10 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    "import": "./dist/esm/index.js",
+    "default": "./dist/index.js"
+  },
   "keywords": [
     "zod",
     "serialization",
