@@ -1,4 +1,4 @@
-import { z } from "zod/v4";
+import { z } from "zod";
 
 // Helper type to extract SomeType from Zod 4
 type SomeType = z.core.SomeType;

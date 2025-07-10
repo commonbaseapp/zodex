@@ -1,4 +1,4 @@
-import { z } from "zod/v4";
+import { z } from "zod";
 import {
   SzOptional,
   SzNullable,
@@ -376,6 +376,7 @@ const zerializers = {
     return {
       type: "templateLiteral",
       parts,
+      ...(def.format ? { format: def.format } : {}),
     };
   },
   string: (def, opts) => {

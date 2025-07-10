@@ -119,6 +119,7 @@ export type SzDate = {
 export type SzTemplateLiteral = {
   type: "templateLiteral";
   parts: (string | SzType)[];
+  format?: string;
 };
 
 export type SzFile = {

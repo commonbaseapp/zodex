@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import z from "zod/v4";
+import z from "zod";
 import { dezerialize, SzType, zerialize } from "zodex";
 
 const DEFAULT_ZOD_VALUE = `z.object({

@@ -27,7 +27,7 @@ npm install zodex
 ## Usage
 
 ```ts
-import { z } from "zod/v4";
+import { z } from "zod";
 import { zerialize } from "zodex";
 
 const someZodType = z.discriminatedUnion("id", [

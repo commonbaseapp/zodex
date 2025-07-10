@@ -1,4 +1,4 @@
-import { z } from "zod/v4";
+import { z } from "zod";
 import {
   SzOptional,
   SzNullable,
@@ -393,6 +393,7 @@ const dezerializers = {
 
   literal: (shape, opts) => z.literal(shape.values, getError(shape, opts)),
   templateLiteral: (shape, opts) => {
+    const error = getError(shape, opts);
     return z.templateLiteral(
       shape.parts.map((part, idx) => {
         if (typeof part === "string") {
@@ -408,7 +409,13 @@ const dezerializers = {
         // We cast to the expected type since we know the runtime behavior is correct.
         return schema as z.core.$ZodTemplateLiteralPart;
       }),
-      getError(shape, opts),
+      /* c8 ignore next 2 -- TS */
+      typeof error === "string"
+        ? error
+        : {
+            ...error,
+            ...(shape.format ? { format: shape.format } : {}),
+          },
     );
   },
 

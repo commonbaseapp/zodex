@@ -1,6 +1,6 @@
 import fs from "fs";
 import { expect, test } from "vitest";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { SzCatch, SzEnum } from "./types";
 import { ZodTypes } from "./zod-types";
 
@@ -130,6 +130,17 @@ test.each([
 
   p(z.templateLiteral(["email: ", z.string()]), {
     type: "templateLiteral",
+    parts: [
+      "email: ",
+      {
+        type: "string",
+      },
+    ],
+  }),
+
+  p(z.templateLiteral(["email: ", z.string()], { format: "typeid" }), {
+    type: "templateLiteral",
+    format: "typeid",
     parts: [
       "email: ",
       {
