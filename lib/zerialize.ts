@@ -13,18 +13,23 @@ import {
   SzRecord,
   SzMap,
   SzSet,
-  SzFunction,
   SzEnum,
   SzPromise,
-  SzNumber,
-  SzEffect,
+  // SzNumber,
+  SzPipe,
   SzCatch,
   SzReadonly,
   SzPrimitive,
   SzType,
-  SzUnknown,
+  // SzUnknown,
+  // NUMBER_FORMATS,
   STRING_KINDS,
   SzRef,
+  SzString,
+  SzNumber,
+  SzSymbol,
+  SzExtras,
+  SzKey,
 } from "./types";
 import { ZodTypes, ZTypeName } from "./zod-types";
 
@@ -42,300 +47,593 @@ export const PRIMITIVES = {
   ZodNever: "never",
   ZodVoid: "void",
   ZodSymbol: "symbol",
-} as const satisfies Readonly<
-  Partial<Record<z.ZodFirstPartyTypeKind, SzPrimitive["type"]>>
->;
+} as const satisfies Readonly<Partial<Record<string, SzPrimitive["type"]>>>;
 export type PrimitiveMap = typeof PRIMITIVES;
 
 type IsZodPrimitive<T extends ZodTypes> =
   ZTypeName<T> extends keyof PrimitiveMap ? any : never;
 
+// Helper type to extract SomeType from Zod 4
+type SomeType = z.core.SomeType;
+
 // Types must match the exported zerialize function's implementation
 export type Zerialize<T extends ZodTypes> =
   // Modifier types
-  T extends z.ZodOptional<infer I>
-    ? Zerialize<I> & SzOptional
-    : T extends z.ZodNullable<infer I>
-    ? Zerialize<I> & SzNullable
-    : T extends z.ZodDefault<infer I>
-    ? Zerialize<I> & SzDefault<I["_type"]>
-    : T extends z.ZodReadonly<infer I>
-    ? Zerialize<I> & SzReadonly
-    : // Primitives
-    T extends IsZodPrimitive<T>
-    ? { type: PrimitiveMap[ZTypeName<T>] }
-    : //
-    T extends z.ZodLiteral<infer T>
-    ? SzLiteral<T>
-    : // List Collections
-    T extends z.ZodTuple<infer Items>
-    ? {
-        [Index in keyof Items]: Zerialize<Items[Index]>;
-      } extends infer SzItems extends [SzType, ...SzType[]] | []
-      ? SzTuple<SzItems>
-      : SzType
-    : T extends z.ZodSet<infer T>
-    ? SzSet<Zerialize<T>>
-    : T extends z.ZodArray<infer T>
-    ? SzArray<Zerialize<T>>
-    : // Key/Value Collections
-    T extends z.ZodObject<infer Properties>
-    ? SzObject<{
-        [Property in keyof Properties]: Zerialize<Properties[Property]>;
-      }>
-    : T extends z.ZodRecord<infer Key, infer Value>
-    ? SzRecord<Zerialize<Key>, Zerialize<Value>>
-    : T extends z.ZodMap<infer Key, infer Value>
-    ? SzMap<Zerialize<Key>, Zerialize<Value>>
-    : // Enums
-    T extends z.ZodEnum<infer Values>
-    ? SzEnum<Values>
-    : T extends z.ZodNativeEnum<infer _Values>
-    ? SzUnknown
-    : // Union/Intersection
-    T extends z.ZodUnion<infer Options>
-    ? {
-        [Index in keyof Options]: Zerialize<Options[Index]>;
-      } extends infer SzOptions extends [SzType, ...SzType[]]
-      ? SzUnion<SzOptions>
-      : SzType
-    : T extends z.ZodDiscriminatedUnion<infer Discriminator, infer Options>
-    ? SzDiscriminatedUnion<
-        Discriminator,
-        {
-          [Index in keyof Options]: Zerialize<Options[Index]>;
-        }
-      >
-    : T extends z.ZodIntersection<infer L, infer R>
-    ? SzIntersection<Zerialize<L>, Zerialize<R>>
-    : // Specials
-    T extends z.ZodFunction<infer Args, infer Return>
-    ? Zerialize<Args> extends infer SzArgs extends SzTuple
-      ? SzFunction<SzArgs, Zerialize<Return>>
-      : SzType
-    : T extends z.ZodPromise<infer Value>
-    ? SzPromise<Zerialize<Value>>
-    : T extends z.ZodCatch<infer T>
-    ? SzCatch<Zerialize<T>>
-    : T extends z.ZodEffects<infer T>
-    ? SzEffect<Zerialize<T>>
-    : // Unserializable types, fallback to serializing inner type
-    T extends z.ZodLazy<infer T>
-    ? Zerialize<T>
-    : T extends z.ZodBranded<infer T, infer _Brand>
-    ? Zerialize<T>
-    : T extends z.ZodPipeline<infer _In, infer Out>
-    ? Zerialize<Out>
-    : T extends z.ZodCatch<infer Inner>
-    ? Zerialize<Inner>
-    : SzType;
+  T extends z.ZodOptional<infer I extends SomeType>
+    ? Zerialize<I extends ZodTypes ? I : never> & SzOptional
+    : T extends z.ZodNullable<infer I extends SomeType>
+      ? Zerialize<I extends ZodTypes ? I : never> & SzNullable
+      : T extends z.ZodDefault<infer I extends SomeType>
+        ? Zerialize<I extends ZodTypes ? I : never> &
+            SzDefault<z.core.output<I>>
+        : T extends z.ZodReadonly<infer I extends SomeType>
+          ? Zerialize<I extends ZodTypes ? I : never> & SzReadonly
+          : // Primitives
+            T extends IsZodPrimitive<T>
+            ? { type: PrimitiveMap[ZTypeName<T>] }
+            : //
+              T extends z.ZodLiteral<infer T>
+              ? SzLiteral<T>
+              : // List Collections
+                T extends z.ZodTuple<infer Items, any>
+                ? {
+                    [Index in keyof Items]: Items[Index] extends ZodTypes
+                      ? Zerialize<Items[Index]>
+                      : SzType;
+                  } extends infer SzItems extends [SzType, ...SzType[]] | []
+                  ? SzTuple<SzItems>
+                  : SzType
+                : T extends z.ZodSet<infer T extends SomeType>
+                  ? SzSet<T extends ZodTypes ? Zerialize<T> : SzType>
+                  : T extends z.ZodArray<infer T extends SomeType>
+                    ? SzArray<T extends ZodTypes ? Zerialize<T> : SzType>
+                    : T extends z.ZodPipe<
+                          infer T extends SomeType,
+                          infer U extends SomeType
+                        >
+                      ? SzPipe<
+                          T extends ZodTypes ? Zerialize<T> : SzType,
+                          U extends ZodTypes ? Zerialize<U> : SzType
+                        >
+                      : // Key/Value Collections
+                        T extends z.ZodObject<infer Properties>
+                        ? SzObject<{
+                            [Property in keyof Properties]: Properties[Property] extends ZodTypes
+                              ? Zerialize<Properties[Property]>
+                              : SzType;
+                          }>
+                        : T extends z.ZodRecord<
+                              infer Key,
+                              infer Value extends SomeType
+                            >
+                          ? SzRecord<
+                              Key extends z.ZodString
+                                ? SzString & SzExtras
+                                : Key extends z.ZodNumber
+                                  ? SzNumber & SzExtras
+                                  : Key extends z.ZodSymbol
+                                    ? SzSymbol & SzExtras
+                                    : Key extends z.ZodLiteral<
+                                          infer L extends
+                                            | string
+                                            | number
+                                            | bigint
+                                            | boolean
+                                            | null
+                                            | undefined
+                                        >
+                                      ? SzLiteral<L> & SzExtras
+                                      : Key extends z.ZodEnum<infer E>
+                                        ? SzEnum<E> & SzExtras
+                                        : SzKey,
+                              Value extends ZodTypes ? Zerialize<Value> : SzType
+                            >
+                          : T extends z.ZodMap<
+                                infer Key extends SomeType,
+                                infer Value extends SomeType
+                              >
+                            ? SzMap<
+                                Key extends ZodTypes ? Zerialize<Key> : SzType,
+                                Value extends ZodTypes
+                                  ? Zerialize<Value>
+                                  : SzType
+                              >
+                            : // Enums
+                              T extends z.ZodEnum<infer Values>
+                              ? SzEnum<Values>
+                              : // Union/Intersection
+                                T extends z.ZodUnion<infer Options>
+                                ? {
+                                    [Index in keyof Options]: Options[Index] extends ZodTypes
+                                      ? Zerialize<Options[Index]>
+                                      : SzType;
+                                  } extends infer SzOptions extends [
+                                    SzType,
+                                    ...SzType[],
+                                  ]
+                                  ? SzUnion<SzOptions>
+                                  : SzType
+                                : T extends z.ZodDiscriminatedUnion<
+                                      infer Options
+                                    >
+                                  ? T["_zod"]["def"]["discriminator"] extends infer Discriminator extends
+                                      string
+                                    ? SzDiscriminatedUnion<
+                                        Discriminator,
+                                        {
+                                          [Index in keyof Options]: Options[Index] extends ZodTypes
+                                            ? Zerialize<Options[Index]>
+                                            : SzType;
+                                        } extends infer O extends
+                                          readonly SzType[]
+                                          ? O
+                                          : never
+                                      >
+                                    : SzType
+                                  : T extends z.ZodIntersection<
+                                        infer L extends SomeType,
+                                        infer R extends SomeType
+                                      >
+                                    ? SzIntersection<
+                                        L extends ZodTypes
+                                          ? Zerialize<L>
+                                          : SzType,
+                                        R extends ZodTypes
+                                          ? Zerialize<R>
+                                          : SzType
+                                      >
+                                    : // Specials
+                                      T extends z.ZodPromise<
+                                          infer Value extends SomeType
+                                        >
+                                      ? SzPromise<
+                                          Value extends ZodTypes
+                                            ? Zerialize<Value>
+                                            : SzType
+                                        >
+                                      : T extends z.ZodCatch<
+                                            infer T extends SomeType
+                                          >
+                                        ? SzCatch<
+                                            T extends ZodTypes
+                                              ? Zerialize<T>
+                                              : SzType
+                                          >
+                                        : // Unserializable types, fallback to serializing inner type
+                                          T extends z.ZodLazy<
+                                              infer T extends SomeType
+                                            >
+                                          ? T extends ZodTypes
+                                            ? Zerialize<T>
+                                            : SzType
+                                          : T extends z.ZodPipe<
+                                                infer _In,
+                                                infer Out extends SomeType
+                                              >
+                                            ? Out extends ZodTypes
+                                              ? Zerialize<Out>
+                                              : SzType
+                                            : T extends z.ZodCatch<
+                                                  infer Inner extends SomeType
+                                                >
+                                              ? Inner extends ZodTypes
+                                                ? Zerialize<Inner>
+                                                : SzType
+                                              : SzType;
 
 type ZodTypeMap = {
-  [Key in ZTypeName<ZodTypes>]: Extract<ZodTypes, { _def: { typeName: Key } }>;
+  [Key in ZTypeName<ZodTypes>]: Extract<
+    ZodTypes,
+    { _zod: { def: { type: Key } } }
+  >;
 };
 
 type ZerializerOptions = {
-  superRefinements?: {
-    [key: string]: (value: any, ctx: z.RefinementCtx) => Promise<void> | void;
+  errors?: {
+    [key: string]: z.core.$ZodErrorMap;
+  };
+  checks?: {
+    [key: string]: (ctx: z.core.ParsePayload<any>) => Promise<void> | void;
   };
   transforms?: {
-    [key: string]: (
-      value: any,
-      ctx: z.RefinementCtx
-    ) => Promise<unknown> | unknown;
-  };
-  preprocesses?: {
-    [key: string]: (value: any, ctx: z.RefinementCtx) => unknown;
+    [key: string]: (ctx: z.core.ParsePayload) => Promise<unknown> | unknown;
   };
   currentPath: string[];
-  seenObjects: WeakMap<z.ZodTypeDef, string>;
+  seenObjects: WeakMap<ZodTypes, string>;
 };
 
 type ZerializersMap = {
   [Key in ZTypeName<ZodTypes>]: (
-    def: ZodTypeMap[Key]["_def"],
-    opts: ZerializerOptions
+    def: ZodTypeMap[Key]["def"],
+    opts: ZerializerOptions,
   ) => any; //Zerialize<ZodTypeMap[Key]>;
+};
+
+const getCustomChecksAndErrors = (
+  def: {
+    checks?: z.core.$ZodCheck[];
+    error?: any;
+  },
+  opts: ZerializerOptions,
+) => {
+  let customChecks = null;
+  if ("checks" in opts && opts.checks) {
+    customChecks = def.checks
+      ?.filter((check) => {
+        const chk = check._zod.def.check;
+        return chk == "custom";
+      })
+      .map((check) => {
+        const name = Object.entries(
+          /* c8 ignore next -- TS doesn't catch */
+          opts.checks || {},
+        ).find(([, checkFunc]) => {
+          return checkFunc === (check as z.core.$ZodCustom)._zod.check;
+        })?.[0];
+        if (name) {
+          return { name };
+        }
+
+        // May be a refinement
+        return null;
+      })
+      .filter(Boolean);
+  }
+
+  let customError;
+  if ("error" in def) {
+    const key = Object.entries(opts.errors ?? {}).find(([, func]) => {
+      return func === def.error;
+    })?.[0];
+    customError =
+      typeof key == "string"
+        ? { key }
+        : // Not supplying an issue should not be a problem for regular
+          //   wrapped string errors
+          def.error();
+  }
+
+  return Object.assign(
+    customChecks ? { checks: customChecks } : {},
+    customError ? { error: customError } : {},
+  );
 };
 
 const s = zerializeRefs as any;
 const zerializers = {
-  ZodOptional: (def, opts) => ({
+  optional: (def, opts) => ({
     ...s(def.innerType, opts, true),
     isOptional: true,
   }),
-  ZodNullable: (def, opts) => ({
+  nullable: (def, opts) => ({
     ...s(def.innerType, opts, true),
     isNullable: true,
   }),
-  ZodDefault: (def, opts) => ({
+  default: (def, opts) => ({
     ...s(def.innerType, opts, true),
     defaultValue:
-      def.innerType._def.typeName === "ZodBigInt"
-        ? String(def.defaultValue())
-        : def.innerType._def.typeName === "ZodDate"
-        ? (def.defaultValue() as Date).getTime()
-        : def.defaultValue(),
+      def.innerType._zod.def.type === "bigint"
+        ? String(def.defaultValue)
+        : def.innerType._zod.def.type === "date"
+          ? (def.defaultValue as Date).getTime()
+          : def.defaultValue,
   }),
 
-  ZodNumber: (def) => {
-    const checks = def.checks.reduce(
-      (o, check) => ({
+  number: (def, opts) => {
+    const checks = def.checks?.reduce((o, check) => {
+      const chk = check._zod.def.check;
+      const format = (check as z.core.$ZodCheckNumberFormat)._zod.def.format;
+      return {
         ...o,
-        ...(check.kind == "min"
+        ...(chk == "greater_than"
           ? {
-              min: check.value,
-              ...(check.inclusive ? { minInclusive: true } : {}),
+              min: (check as z.core.$ZodCheckLessThan<number>)._zod.def.value,
+              ...((check as z.core.$ZodCheckLessThan<number>)._zod.def.inclusive
+                ? { minInclusive: true }
+                : {}),
             }
-          : check.kind == "max"
-          ? {
-              max: check.value,
-              ...(check.inclusive ? { maxInclusive: true } : {}),
-            }
-          : check.kind == "multipleOf"
-          ? { multipleOf: check.value }
-          : check.kind == "int"
-          ? { int: true }
-          : check.kind == "finite"
-          ? {
-              finite: true,
-              /* c8 ignore next 2 -- Guard */
-            }
-          : {}),
-      }),
-      {}
-    );
+          : chk == "less_than"
+            ? {
+                max: (check as z.core.$ZodCheckGreaterThan<number>)._zod.def
+                  .value,
+                ...((check as z.core.$ZodCheckLessThan<number>)._zod.def
+                  .inclusive
+                  ? { maxInclusive: true }
+                  : {}),
+              }
+            : chk == "multiple_of"
+              ? {
+                  multipleOf: (check as z.core.$ZodCheckMultipleOf<number>)._zod
+                    .def.value,
+                  /* c8 ignore next 2 -- Guard */
+                }
+              : {}),
+      };
+    }, {});
     return Object.assign(
-      { type: "number", ...checks },
-      def.coerce ? { coerce: true } : {}
+      {
+        type: "number",
+        ...checks,
+        ...getCustomChecksAndErrors(def, opts),
+        // Check is on `def` itself
+        ...("check" in def && def.check === "number_format" && "format" in def
+          ? { format: def.format }
+          : {}),
+      },
+      def.coerce ? { coerce: true } : {},
     );
   },
-  ZodString: (def) => {
-    const checks = def.checks.reduce(
-      (o, check) => ({
+  template_literal: (def, opts) => {
+    const parts = def.parts.map((part, idx) => {
+      if (typeof part == "string") {
+        return part;
+      }
+      return s(part, {
+        ...opts,
+        currentPath: [...opts.currentPath, "parts", String(idx)],
+      });
+    });
+    return {
+      type: "templateLiteral",
+      parts,
+      ...(def.format ? { format: def.format } : {}),
+    };
+  },
+  string: (def, opts) => {
+    const checks = (def.checks as z.core.$ZodChecks[])?.reduce((o, check) => {
+      const chk = check._zod.def.check;
+      const format = (check as z.core.$ZodCheckStringFormat)._zod.def.format;
+
+      return {
         ...o,
-        ...(check.kind == "min"
-          ? { min: check.value }
-          : check.kind == "max"
-          ? { max: check.value }
-          : check.kind == "length"
-          ? { length: check.value }
-          : check.kind == "toLowerCase"
-          ? { toLowerCase: true }
-          : check.kind == "toUpperCase"
-          ? { toUpperCase: true }
-          : check.kind == "trim"
-          ? { trim: true }
-          : check.kind == "startsWith"
-          ? { startsWith: check.value }
-          : check.kind == "endsWith"
-          ? { endsWith: check.value }
-          : check.kind == "includes"
-          ? { includes: check.value, position: check.position }
-          : check.kind == "regex"
-          ? {
-              regex: check.regex.source,
-              ...(check.regex.flags ? { flags: check.regex.flags } : {}),
-            }
-          : check.kind == "ip"
-          ? { kind: "ip", version: check.version }
-          : check.kind == "cidr"
-          ? { kind: "cidr", version: check.version }
-          : check.kind == "time"
-          ? {
-              kind: "time",
-              ...(typeof check.precision === "number"
-                ? { precision: check.precision }
-                : {}),
-            }
-          : check.kind == "datetime"
-          ? {
-              kind: "datetime",
-              ...(check.offset ? { offset: check.offset } : {}),
-              ...("local" in check && check.local
-                ? { local: check.local }
-                : {}),
-              ...(typeof check.precision === "number"
-                ? { precision: check.precision }
-                : {}),
-            }
-          : STRING_KINDS.has(check.kind as any)
-          ? {
-              kind: check.kind,
-              /* c8 ignore next 2 -- Guard */
-            }
-          : {}),
-      }),
-      {}
-    );
+        ...(chk == "min_length"
+          ? { min: (check as z.core.$ZodCheckMinLength)._zod.def.minimum }
+          : chk == "max_length"
+            ? { max: (check as z.core.$ZodCheckMaxLength)._zod.def.maximum }
+            : chk == "length_equals"
+              ? {
+                  length: (check as z.core.$ZodCheckLengthEquals)._zod.def
+                    .length,
+                }
+              : // Any way around this?
+                chk === "overwrite" &&
+                  check._zod.def.tx.toString() ===
+                    "(input) => input.toUpperCase()"
+                ? { toUpperCase: true }
+                : chk === "overwrite" &&
+                    check._zod.def.tx.toString() ===
+                      "(input) => input.toLowerCase()"
+                  ? { toLowerCase: true }
+                  : chk === "overwrite" &&
+                      check._zod.def.tx.toString() === "(input) => input.trim()"
+                    ? { trim: true }
+                    : // No apparent check
+                      // : chk == "string_format" && format == "trim"
+                      // ? { trim: true }
+                      chk == "string_format" && format == "starts_with"
+                      ? {
+                          startsWith: (check as z.core.$ZodCheckStartsWith)._zod
+                            .def.prefix,
+                        }
+                      : chk == "string_format" && format == "ends_with"
+                        ? {
+                            endsWith: (check as z.core.$ZodCheckEndsWith)._zod
+                              .def.suffix,
+                          }
+                        : chk == "string_format" && format == "includes"
+                          ? {
+                              includes: (check as z.core.$ZodCheckIncludes)._zod
+                                .def.includes,
+                              position: (check as z.core.$ZodCheckIncludes)._zod
+                                .def.position,
+                            }
+                          : chk == "string_format" && format == "regex"
+                            ? {
+                                regex: (check as z.core.$ZodCheckRegex)._zod.def
+                                  .pattern.source,
+                                ...((check as z.core.$ZodCheckRegex)._zod.def
+                                  .pattern.flags
+                                  ? {
+                                      flags: (check as z.core.$ZodCheckRegex)
+                                        ._zod.def.pattern.flags,
+                                    }
+                                  : {}),
+                                /* c8 ignore next 2 -- Guard */
+                              }
+                            : {}),
+      };
+    }, {});
+
+    const format = "format" in def && def.format;
     return Object.assign(
-      { type: "string", ...checks },
-      def.coerce ? { coerce: true } : {}
+      {
+        type: "string",
+        ...checks,
+        ...getCustomChecksAndErrors(def, opts),
+        // Check is on `def` itself
+        ...(format == "ipv4"
+          ? { kind: "ip", version: "v4" }
+          : format == "ipv6"
+            ? { kind: "ip", version: "v6" }
+            : format == "cidrv4"
+              ? { kind: "cidr", version: "v4" }
+              : format == "cidrv6"
+                ? { kind: "cidr", version: "v6" }
+                : format == "uuid"
+                  ? {
+                      kind: "uuid",
+                      ...("version" in def ? { version: def.version } : {}),
+                    }
+                  : format == "jwt"
+                    ? {
+                        kind: "jwt",
+                        ...("alg" in def ? { algorithm: def.alg } : {}),
+                      }
+                    : format == "email"
+                      ? {
+                          kind: "email",
+                          ...("pattern" in def &&
+                          def.pattern &&
+                          typeof def.pattern == "object" &&
+                          "source" in def.pattern &&
+                          "flags" in def.pattern &&
+                          def.pattern.source !== z.regexes.email.source
+                            ? {
+                                pattern: def.pattern.source,
+                                flags: def.pattern.flags,
+                              }
+                            : {}),
+                        }
+                      : ("format" in def && STRING_KINDS.has(format as any)) ||
+                          format == "datetime" ||
+                          format == "time"
+                        ? {
+                            kind: format,
+                            ...("precision" in def && def.precision
+                              ? {
+                                  precision: def.precision,
+                                }
+                              : {}),
+                            ...("offset" in def && def.offset
+                              ? {
+                                  offset: def.offset,
+                                }
+                              : {}),
+                            ...("local" in def && def.local
+                              ? {
+                                  local: def.local,
+                                }
+                              : {}),
+                          }
+                        : {}),
+      },
+      def.coerce ? { coerce: true } : {},
     );
   },
-  ZodBoolean: (def) =>
+  boolean: (def) =>
     Object.assign({ type: "boolean" }, def.coerce ? { coerce: true } : {}),
-  ZodNaN: () => ({ type: "nan" }),
-  ZodSymbol: (def) => ({ type: "symbol" }),
-  ZodBigInt: (def) => {
-    const checks = def.checks.reduce(
-      (o, check) => ({
+  nan: () => ({ type: "nan" }),
+  symbol: () => ({ type: "symbol" }),
+  bigint: (def, opts) => {
+    const checks = def.checks?.reduce((o, check) => {
+      const chk = check._zod.def.check;
+      return {
         ...o,
-        ...(check.kind == "min"
+        ...(chk == "greater_than"
           ? {
-              min: String(check.value),
-              ...(check.inclusive ? { minInclusive: true } : {}),
+              min: String(
+                (check as z.core.$ZodCheckLessThan<bigint>)._zod.def.value,
+              ),
+              ...((check as z.core.$ZodCheckLessThan<bigint>)._zod.def.inclusive
+                ? { minInclusive: true }
+                : {}),
             }
-          : check.kind == "max"
-          ? {
-              max: String(check.value),
-              ...(check.inclusive ? { maxInclusive: true } : {}),
-            }
-          : check.kind == "multipleOf"
-          ? {
-              multipleOf: String(check.value),
-              /* c8 ignore next 2 -- Guard */
-            }
-          : {}),
-      }),
-      {}
-    );
+          : chk == "less_than"
+            ? {
+                max: String(
+                  (check as z.core.$ZodCheckGreaterThan<bigint>)._zod.def.value,
+                ),
+                ...((check as z.core.$ZodCheckLessThan<bigint>)._zod.def
+                  .inclusive
+                  ? { maxInclusive: true }
+                  : {}),
+              }
+            : chk == "multiple_of"
+              ? {
+                  multipleOf: String(
+                    (check as z.core.$ZodCheckMultipleOf<bigint>)._zod.def
+                      .value,
+                  ),
+                  /* c8 ignore next 2 -- Guard */
+                }
+              : {}),
+      };
+    }, {});
     return Object.assign(
-      { type: "bigInt", ...checks },
-      def.coerce ? { coerce: true } : {}
+      {
+        type: "bigInt",
+        ...checks,
+        ...getCustomChecksAndErrors(def, opts),
+        // Check is on `def` itself
+        ...("check" in def && def.check === "bigint_format" && "format" in def
+          ? { format: def.format }
+          : {}),
+      },
+      def.coerce ? { coerce: true } : {},
     );
   },
-  ZodDate: (def) => {
-    const checks = def.checks.reduce(
-      (o, check) => ({
+  file: (def) => {
+    const checks = def.checks?.reduce((o, check) => {
+      const chk = check._zod.def.check;
+      return {
         ...o,
-        ...(check.kind == "min"
-          ? { min: check.value }
-          : check.kind == "max"
+        ...(chk == "min_size"
           ? {
-              max: check.value,
-              /* c8 ignore next 2 -- Guard */
+              min: (check as z.core.$ZodCheckMinSize<File>)._zod.def.minimum,
             }
-          : {}),
-      }),
-      {}
-    );
+          : chk == "max_size"
+            ? {
+                max: (check as z.core.$ZodCheckMaxSize<File>)._zod.def.maximum,
+              }
+            : chk == "mime_type"
+              ? {
+                  mime: (check as z.core.$ZodCheckMimeType<File>)._zod.def.mime,
+                  /* c8 ignore next 2 -- Guard */
+                }
+              : {}),
+      };
+    }, {});
+    return {
+      type: "file",
+      ...checks,
+    };
+  },
+  date: (def, opts) => {
+    const checks = def.checks?.reduce((o, check) => {
+      const chk = check._zod.def.check;
+      return {
+        ...o,
+        ...(chk == "greater_than"
+          ? {
+              min: (
+                (check as z.core.$ZodCheckLessThan<Date>)._zod.def.value as Date
+              ).getTime(),
+              // ...((check as z.core.$ZodCheckLessThan<Date>)._zod.def.inclusive
+              //   ? { minInclusive: true }
+              //   : {}),
+            }
+          : chk == "less_than"
+            ? {
+                max: (
+                  (check as z.core.$ZodCheckGreaterThan<Date>)._zod.def
+                    .value as Date
+                ).getTime(),
+                // ...((check as z.core.$ZodCheckLessThan<Date>)._zod.def.inclusive
+                //   ? { maxInclusive: true }
+                //   : {}),
+              }
+            : /* c8 ignore next -- Guard */
+              {}),
+      };
+    }, {});
+
     return Object.assign(
-      { type: "date", ...checks },
-      def.coerce ? { coerce: true } : {}
+      { type: "date", ...checks, ...getCustomChecksAndErrors(def, opts) },
+      def.coerce ? { coerce: true } : {},
     );
   },
-  ZodUndefined: () => ({ type: "undefined" }),
-  ZodNull: () => ({ type: "null" }),
-  ZodAny: () => ({ type: "any" }),
-  ZodUnknown: () => ({ type: "unknown" }),
-  ZodNever: () => ({ type: "never" }),
-  ZodVoid: () => ({ type: "void" }),
+  undefined: () => ({ type: "undefined" }),
+  null: () => ({ type: "null" }),
+  any: () => ({ type: "any" }),
+  unknown: () => ({ type: "unknown" }),
+  never: () => ({ type: "never" }),
+  void: () => ({ type: "void" }),
 
-  ZodLiteral: (def) => ({ type: "literal", value: def.value }),
+  literal: (def) => ({ type: "literal", values: def.values }),
 
-  ZodTuple: (def, opts) => ({
+  tuple: (def, opts) => ({
     type: "tuple",
+    ...getCustomChecksAndErrors(def, opts),
     items: def.items.map((item: ZodTypes, idx: number) => {
       const result = s(item, {
         ...opts,
@@ -352,59 +650,99 @@ const zerializers = {
         }
       : {}),
   }),
-  ZodSet: (def, opts) => ({
-    type: "set",
-    value: s(def.valueType, {
-      ...opts,
-      currentPath: [...opts.currentPath, "value"],
-    }),
-    ...(def.minSize === null ? {} : { minSize: def.minSize.value }),
-    ...(def.maxSize === null ? {} : { maxSize: def.maxSize.value }),
-  }),
-  ZodArray: (def, opts) => ({
-    type: "array",
-    element: s(def.type, {
-      ...opts,
-      currentPath: [...opts.currentPath, "element"],
-    }),
+  set: (def, opts) => {
+    const checks = def.checks?.reduce((o, check) => {
+      const chk = check._zod.def.check;
+      return {
+        ...o,
+        ...(chk == "min_size"
+          ? {
+              minSize: (check as z.core.$ZodCheckMinSize)._zod.def.minimum,
+            }
+          : chk == "max_size"
+            ? {
+                maxSize: (check as z.core.$ZodCheckMaxSize)._zod.def.maximum,
+              }
+            : chk == "size_equals"
+              ? {
+                  minSize: (check as z.core.$ZodCheckSizeEquals)._zod.def.size,
+                  maxSize: (check as z.core.$ZodCheckSizeEquals)._zod.def.size,
+                  /* c8 ignore next 2 -- Guard */
+                }
+              : {}),
+      };
+    }, {});
+    return {
+      type: "set",
+      value: s(def.valueType, {
+        ...opts,
+        currentPath: [...opts.currentPath, "value"],
+      }),
+      ...getCustomChecksAndErrors(def, opts),
+      ...checks,
+    };
+  },
+  array: (def, opts) => {
+    const checks = (def.checks as z.core.$ZodChecks[])?.reduce((o, check) => {
+      const chk = check._zod.def.check;
+      return {
+        ...o,
+        ...(chk == "min_length"
+          ? { minLength: (check as z.core.$ZodCheckMinLength)._zod.def.minimum }
+          : chk == "max_length"
+            ? {
+                maxLength: (check as z.core.$ZodCheckMaxLength)._zod.def
+                  .maximum,
+              }
+            : chk == "length_equals"
+              ? {
+                  minLength: (check as z.core.$ZodCheckLengthEquals)._zod.def
+                    .length,
+                  maxLength: (check as z.core.$ZodCheckLengthEquals)._zod.def
+                    .length,
+                  /* c8 ignore next 2 -- Guard */
+                }
+              : {}),
+      };
+    }, {});
 
-    ...(def.exactLength === null
-      ? {}
-      : {
-          minLength: def.exactLength.value,
-          maxLength: def.exactLength.value,
-        }),
-    ...(def.minLength === null ? {} : { minLength: def.minLength.value }),
-    ...(def.maxLength === null ? {} : { maxLength: def.maxLength.value }),
-  }),
+    return {
+      type: "array",
+      element: s(def.element, {
+        ...opts,
+        currentPath: [...opts.currentPath, "element"],
+      }),
+      ...getCustomChecksAndErrors(def, opts),
+      ...checks,
+    };
+  },
 
-  ZodObject: (def, opts) => ({
-    type: "object",
-    ...(def.catchall._def.typeName === "ZodNever"
-      ? {}
-      : {
-          catchall: s(def.catchall, {
-            ...opts,
-            currentPath: [...opts.currentPath, "catchall"],
+  object: (def, opts) => {
+    return {
+      type: "object",
+      ...getCustomChecksAndErrors(def, opts),
+      ...(!def.catchall
+        ? {}
+        : {
+            catchall: s(def.catchall, {
+              ...opts,
+              currentPath: [...opts.currentPath, "catchall"],
+            }),
           }),
-        }),
-    ...(def.unknownKeys === "strip"
-      ? {}
-      : {
-          unknownKeys: def.unknownKeys,
-        }),
-    properties: Object.fromEntries(
-      Object.entries(def.shape()).map(([key, schema]) => [
-        key,
-        s(schema as ZodTypes, {
-          ...opts,
-          currentPath: [...opts.currentPath, "properties", key],
-        }),
-      ])
-    ),
-  }),
-  ZodRecord: (def, opts) => ({
+      properties: Object.fromEntries(
+        Object.entries(def.shape).map(([key, schema]) => [
+          key,
+          s(schema as ZodTypes, {
+            ...opts,
+            currentPath: [...opts.currentPath, "properties", key],
+          }),
+        ]),
+      ),
+    };
+  },
+  record: (def, opts) => ({
     type: "record",
+    ...getCustomChecksAndErrors(def, opts),
     key: s(def.keyType, {
       ...opts,
       currentPath: [...opts.currentPath, "key"],
@@ -414,8 +752,9 @@ const zerializers = {
       currentPath: [...opts.currentPath, "value"],
     }),
   }),
-  ZodMap: (def, opts) => ({
+  map: (def, opts) => ({
     type: "map",
+    ...getCustomChecksAndErrors(def, opts),
     key: s(def.keyType, {
       ...opts,
       currentPath: [...opts.currentPath, "key"],
@@ -426,36 +765,29 @@ const zerializers = {
     }),
   }),
 
-  ZodEnum: (def) => ({ type: "enum", values: def.values }),
+  enum: (def) => ({ type: "enum", values: def.entries }),
 
-  ZodNativeEnum: (def, opts) => ({
-    type: "nativeEnum",
-    values: def.values,
-  }),
-
-  ZodUnion: (def, opts) => ({
-    type: "union",
-    options: def.options.map((opt, idx) => {
-      const result = s(opt, {
-        ...opts,
-        currentPath: [...opts.currentPath, "options", String(idx)],
-      });
-      return result;
-    }),
-  }),
-  ZodDiscriminatedUnion: (def, opts) => ({
-    type: "discriminatedUnion",
-    discriminator: def.discriminator,
-    options: def.options.map((opt, idx) => {
-      const result = s(opt, {
-        ...opts,
-        currentPath: [...opts.currentPath, "options", String(idx)],
-      });
-      return result;
-    }),
-  }),
-  ZodIntersection: (def, opts) => ({
+  union: (def, opts) => {
+    return {
+      type: "discriminator" in def ? "discriminatedUnion" : "union",
+      ...("discriminator" in def
+        ? {
+            discriminator: def.discriminator,
+          }
+        : {}),
+      ...getCustomChecksAndErrors(def, opts),
+      options: def.options.map((opt, idx) => {
+        const result = s(opt, {
+          ...opts,
+          currentPath: [...opts.currentPath, "options", String(idx)],
+        });
+        return result;
+      }),
+    };
+  },
+  intersection: (def, opts) => ({
     type: "intersection",
+    ...getCustomChecksAndErrors(def, opts),
     left: s(def.left, {
       ...opts,
       currentPath: [...opts.currentPath, "left"],
@@ -466,105 +798,63 @@ const zerializers = {
     }),
   }),
 
-  ZodFunction: (def, opts) => ({
-    type: "function",
-    args: s(def.args, {
-      ...opts,
-      currentPath: [...opts.currentPath, "args"],
-    }),
-    returns: s(def.returns, {
-      ...opts,
-      currentPath: [...opts.currentPath, "returns"],
-    }),
-  }),
-  ZodPromise: (def, opts) => ({
+  promise: (def, opts) => ({
     type: "promise",
-    value: s(def.type, {
+    value: s(def.innerType, {
       ...opts,
       currentPath: [...opts.currentPath, "value"],
     }),
   }),
 
-  ZodLazy: (def, opts) => {
-    const getter = def.getter();
-    return s(getter, opts, getter.isOptional() || getter.isNullable());
+  lazy: (def, opts) => {
+    const getter = def.getter() as ZodTypes;
+    return s(
+      getter,
+      opts,
+      // official equivalent for `isOptional`
+      getter.safeParse(undefined).success ||
+        // official equivalent for `isNullable`
+        getter.safeParse(null).success,
+    );
   },
-  ZodEffects: (def, opts) => {
-    if (
-      !(
-        "superRefinements" in opts ||
-        "transforms" in opts ||
-        "preprocesses" in opts
-      )
-    ) {
-      return s(def.schema, opts);
+  transform: (def, opts) => {
+    let name = null;
+    if ("transforms" in opts && opts.transforms) {
+      for (const [transformName, transformItem] of Object.entries(
+        opts.transforms,
+      )) {
+        if (def.type === "transform" && transformItem === def.transform) {
+          name = transformName;
+          break;
+        }
+      }
     }
 
-    const effects = [];
-
-    let lastDef;
-    let d = def;
-    do {
-      lastDef = d;
-
-      let found;
-      if ("superRefinements" in opts && opts.superRefinements) {
-        for (const [name, refinement] of Object.entries(
-          opts.superRefinements
-        )) {
-          if (
-            d.effect.type === "refinement" &&
-            refinement === d.effect.refinement
-          ) {
-            effects.unshift({ type: "refinement", name });
-            found = true;
-            break;
-          }
-        }
-      }
-
-      if (!found && "transforms" in opts && opts.transforms) {
-        for (const [name, transform] of Object.entries(opts.transforms)) {
-          if (
-            d.effect.type === "transform" &&
-            transform === d.effect.transform
-          ) {
-            effects.unshift({ type: "transform", name });
-            found = true;
-            break;
-          }
-        }
-      }
-
-      if (!found && "preprocesses" in opts && opts.preprocesses) {
-        for (const [name, preprocess] of Object.entries(opts.preprocesses)) {
-          if (
-            d.effect.type === "preprocess" &&
-            preprocess === d.effect.transform
-          ) {
-            effects.unshift({ type: "preprocess", name });
-            found = true;
-            break;
-          }
-        }
-      }
-
-      d = d.schema._def;
-    } while (d && d.typeName === "ZodEffects");
-
     return {
-      type: "effect",
-      effects,
-      inner: s(lastDef.schema, {
-        ...opts,
-        currentPath: [...opts.currentPath, "inner"],
-      }),
+      type: "transform",
+      name,
+      // inner: s(def.out, {
+      //   ...opts,
+      //   currentPath: [...opts.currentPath, "inner"],
+      // }),
     };
   },
-  ZodBranded: (def, opts) => s(def.type, opts),
-  ZodPipeline: (def, opts) => s(def.out, opts),
-  ZodCatch: (def, opts) => {
+  pipe: (def, opts) => {
+    if (!("transforms" in opts)) {
+      return s(def.out, opts);
+    }
+
+    return {
+      type: "pipe",
+      ...getCustomChecksAndErrors(def, opts),
+      inner: s(def.in, opts),
+      outer: s(def.out, opts),
+    };
+  },
+  catch: (def, opts) => {
     const catchValue = def.catchValue({
+      value: null,
+      issues: [],
       // No errors to report, so just add an empty set
       /* c8 ignore next 3 -- Unused */
       get error() {
@@ -580,7 +870,7 @@ const zerializers = {
       innerType: s(def.innerType, opts),
     };
   },
-  ZodReadonly: (def, opts) => ({
+  readonly: (def, opts) => ({
     ...s(def.innerType, opts, true),
     readonly: true,
   }),
@@ -590,7 +880,7 @@ const zerializers = {
 export function zerializeRefs<T extends ZodTypes>(
   schema: T,
   opts: ZerializerOptions,
-  wrapReferences?: boolean
+  wrapReferences?: boolean,
 ): Zerialize<T> | SzRef {
   // export function zerialize(schema: ZodTypes, opts?: Partial<ZerializerOptions> | undefined): unknown {
 
@@ -599,21 +889,28 @@ export function zerializeRefs<T extends ZodTypes>(
       ? ({
           type: "union",
           options: [{ $ref: opts.seenObjects.get(schema)! }],
+          ...(typeof schema.description === "string"
+            ? {
+                description: schema.description,
+              }
+            : {}),
         } as any)
       : ({ $ref: opts.seenObjects.get(schema)! } as SzRef);
   }
 
-  const { _def: def } = schema;
+  const {
+    _zod: { def },
+  } = schema;
 
   const objectPath =
     "#" + (opts.currentPath.length ? "/" + opts.currentPath.join("/") : "");
 
   opts.seenObjects.set(schema, objectPath);
 
-  const zer = zerializers[def.typeName](def as any, opts as ZerializerOptions);
+  const zer = zerializers[def.type](def as any, opts as ZerializerOptions);
 
-  if (typeof def.description === "string") {
-    zer.description = def.description;
+  if (typeof schema.description === "string") {
+    zer.description = schema.description;
   }
 
   return zer;
@@ -621,7 +918,7 @@ export function zerializeRefs<T extends ZodTypes>(
 
 export function zerialize<T extends ZodTypes>(
   schema: T,
-  opts: Partial<ZerializerOptions> = {}
+  opts: Partial<ZerializerOptions> = {},
 ): Zerialize<T> {
   if (!opts.currentPath) {
     opts.currentPath = [];

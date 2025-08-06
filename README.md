@@ -1,6 +1,6 @@
 # Zodex
 
-Type-safe (de)serialization library for [zod](https://zod.dev/). It both serializes and simplifies types into a JSON format, in the following ways:
+Type-safe (de)serialization library for [zod](https://zod.dev/) (v4 format). It both serializes and simplifies types into a JSON format, in the following ways:
 
 - optional, nullable and default types are inlined into any given types itself
 
@@ -47,11 +47,11 @@ type Shape = {
     {
       type: "object";
       properties: {
-        id: { type: "literal"; value: "a" };
+        id: { type: "literal"; values: ["a"] };
         count: { type: "number"; isOptional: true };
       };
     },
-    { type: "object"; properties: { id: { type: "literal"; value: "b" } } }
+    { type: "object"; properties: { id: { type: "literal"; values: ["b"] } } },
   ];
 };
 ```
@@ -66,7 +66,8 @@ options:
     properties:
       id:
         type: "literal"
-        value: "a"
+        values:
+          - "a"
       count:
         type: "number"
         isOptional: true
@@ -74,25 +75,26 @@ options:
     properties:
       id:
         type: "literal"
-        value: "b"
+        values:
+          - "b"
 ```
 
 ## Options
 
 Both `zerialize` and `dezerialize` accept an options object with the
-same properties.
+same `errors`, `checks`, and `transforms` properties.
 
-Since Zod does not allow the specification of the names of effects
-(refinements, transforms, and preprocesses), we allow you to supply
-as options maps of names to effects so that these can be part of
-serialization and deserialization. If none of these options are
-supplied, the effects will be omitted.
+Since Zod does not allow the specification of the names of errors, checks and
+transforms (and preprocesses), we allow you to supply
+as options maps of names to errors/checks/transforms so that these can be part
+of serialization and deserialization. If none of these options are
+supplied, the errors/checks/transforms will be omitted.
 
 Properties:
 
-- `superRefinements` - Map of name to `.superRefine()` functions
-- `transforms` - Map of name to `.transform()` functions
-- `preprocesses` - Map of name to `z.preprocess()` functions
+- `errors` - Map of name to `.someType({error: fn})` functions
+- `checks` - Map of name to `.checks()` functions
+- `transforms` - Map of name to `.transform()` (and `.preprocess`) functions
 
 ## Use of JSON References
 
@@ -127,17 +129,13 @@ JSON reference in place of an object `properties` object. You can either
 resolve this first with another library (if it is a non-cyclic reference),
 or target the whole object or individual properties.
 
-## Roadmap
-
-- custom error messages are not included
-
 ## Caveats
 
 - `brand` is not supportable and omitted
-- `lazy` and `pipeline` types are unwrapped
+- `lazy` type is unwrapped; `pipe` is unwrapped when no transforms are supplied
 - `catch` with a function can have its then-value serialized but it
   cannot then be deserialized back into using the original function
 - Due to technical limitations, we cannot support the regular
   `refine()`, `custom()` and `instanceof` methods (and they will be
-  ignored), but these are really just implementations of `superRefine()`
+  ignored), but these are really just implementations of `check()`
   which is supported

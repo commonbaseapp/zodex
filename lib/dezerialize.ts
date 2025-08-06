@@ -14,11 +14,10 @@ import {
   SzRecord,
   SzMap,
   SzSet,
-  SzFunction,
   SzEnum,
-  SzNativeEnum,
   SzPromise,
-  SzEffect,
+  SzPipe,
+  SzTransform,
   SzCatch,
   SzType,
   SzString,
@@ -35,24 +34,20 @@ import {
   SzUnknown,
   SzVoid,
   SzRef,
+  NUMBER_FORMATS,
 } from "./types";
+
 import { ZodTypes } from "./zod-types";
 
 type DezerializerOptions = {
-  superRefinements?: {
-    [key: string]: (
-      value: unknown,
-      ctx: z.RefinementCtx
-    ) => Promise<void> | void;
+  errors?: {
+    [key: string]: z.core.$ZodErrorMap;
+  };
+  checks?: {
+    [key: string]: (ctx: z.core.ParsePayload) => Promise<void> | void;
   };
   transforms?: {
-    [key: string]: (
-      value: unknown,
-      ctx: z.RefinementCtx
-    ) => Promise<unknown> | unknown;
-  };
-  preprocesses?: {
-    [key: string]: (value: unknown, ctx: z.RefinementCtx) => unknown;
+    [key: string]: (ctx: z.core.ParsePayload) => Promise<unknown> | unknown;
   };
   path: string;
   pathToSchema: Map<string, ZodTypes>;
@@ -69,113 +64,182 @@ type OmitKey<T, K> = DistributiveOmit<T, keyof K>;
 export type Dezerialize<T extends SzType | SzRef> = T extends SzRef
   ? any
   : // Modifier types
-  T extends SzOptional
-  ? Dezerialize<OmitKey<T, SzOptional>> extends infer I
-    ? I extends ZodTypes
-      ? z.ZodOptional<I>
+    T extends SzOptional
+    ? Dezerialize<OmitKey<T, SzOptional>> extends infer I
+      ? I extends ZodTypes
+        ? z.ZodOptional<I>
+        : never
       : never
-    : never
-  : T extends SzNullable
-  ? Dezerialize<OmitKey<T, SzNullable>> extends infer I
-    ? I extends ZodTypes
-      ? z.ZodNullable<I>
-      : never
-    : never
-  : T extends SzReadonly
-  ? Dezerialize<OmitKey<T, SzReadonly>> extends infer I
-    ? I extends ZodTypes
-      ? z.ZodReadonly<I>
-      : never
-    : never
-  : T extends SzDefault<any>
-  ? Dezerialize<OmitKey<T, SzDefault<any>>> extends infer I
-    ? I extends ZodTypes
-      ? z.ZodDefault<I>
-      : never
-    : never // Primitives
-  : T extends SzString
-  ? z.ZodString
-  : T extends SzNumber
-  ? z.ZodNumber
-  : T extends SzBoolean
-  ? z.ZodBoolean
-  : T extends SzBigInt
-  ? z.ZodBigInt
-  : T extends SzNaN
-  ? z.ZodNaN
-  : T extends SzDate
-  ? z.ZodDate
-  : T extends SzUndefined
-  ? z.ZodUndefined
-  : T extends SzNull
-  ? z.ZodNull
-  : T extends SzSymbol
-  ? z.ZodSymbol
-  : T extends SzAny
-  ? z.ZodAny
-  : T extends SzUnknown
-  ? z.ZodUnknown
-  : T extends SzNever
-  ? z.ZodNever
-  : T extends SzVoid
-  ? z.ZodVoid
-  : T extends SzLiteral<infer Value>
-  ? z.ZodLiteral<Value> // List Collections
-  : T extends SzTuple<infer _Items>
-  ? z.ZodTuple<any> //DezerializeArray<Items>>
-  : T extends SzSet<infer Value>
-  ? z.ZodSet<Dezerialize<Value>>
-  : T extends SzArray<infer Element>
-  ? z.ZodArray<Dezerialize<Element>> // Key/Value Collections
-  : T extends SzObject<infer Properties>
-  ? z.ZodObject<{
-      [Property in keyof Properties]: Dezerialize<Properties[Property]>;
-    }>
-  : T extends SzRecord<infer Key, infer Value>
-  ? z.ZodRecord<Dezerialize<Key>, Dezerialize<Value>>
-  : T extends SzMap<infer Key, infer Value>
-  ? z.ZodMap<Dezerialize<Key>, Dezerialize<Value>> // Enum
-  : T extends SzEnum<infer Values>
-  ? z.ZodEnum<Values> // Union/Intersection
-  : T extends SzUnion<infer _Options>
-  ? z.ZodUnion<any>
-  : T extends SzDiscriminatedUnion<infer Discriminator, infer _Options>
-  ? z.ZodDiscriminatedUnion<Discriminator, any>
-  : T extends SzIntersection<infer L, infer R>
-  ? z.ZodIntersection<Dezerialize<L>, Dezerialize<R>> // Specials
-  : T extends SzFunction<infer Args, infer Return>
-  ? z.ZodFunction<Dezerialize<Args>, Dezerialize<Return>>
-  : T extends SzPromise<infer Value>
-  ? z.ZodPromise<Dezerialize<Value>>
-  : T extends SzEffect<infer Value>
-  ? z.ZodEffects<Dezerialize<Value>>
-  : T extends SzCatch<infer Value>
-  ? z.ZodCatch<Dezerialize<Value>>
-  : T extends SzNativeEnum<infer Value>
-  ? z.ZodNativeEnum<Value>
-  : unknown;
+    : T extends SzNullable
+      ? Dezerialize<OmitKey<T, SzNullable>> extends infer I
+        ? I extends ZodTypes
+          ? z.ZodNullable<I>
+          : never
+        : never
+      : T extends SzReadonly
+        ? Dezerialize<OmitKey<T, SzReadonly>> extends infer I
+          ? I extends ZodTypes
+            ? z.ZodReadonly<I>
+            : never
+          : never
+        : T extends SzDefault<any>
+          ? Dezerialize<OmitKey<T, SzDefault<any>>> extends infer I
+            ? I extends ZodTypes
+              ? z.ZodDefault<I>
+              : never
+            : never // Primitives
+          : T extends SzString
+            ? z.ZodString
+            : T extends SzNumber
+              ? z.ZodNumber
+              : T extends SzBoolean
+                ? z.ZodBoolean
+                : T extends SzBigInt
+                  ? z.ZodBigInt
+                  : T extends SzNaN
+                    ? z.ZodNaN
+                    : T extends SzDate
+                      ? z.ZodDate
+                      : T extends SzUndefined
+                        ? z.ZodUndefined
+                        : T extends SzNull
+                          ? z.ZodNull
+                          : T extends SzSymbol
+                            ? z.ZodSymbol
+                            : T extends SzAny
+                              ? z.ZodAny
+                              : T extends SzUnknown
+                                ? z.ZodUnknown
+                                : T extends SzNever
+                                  ? z.ZodNever
+                                  : T extends SzVoid
+                                    ? z.ZodVoid
+                                    : T extends SzLiteral<
+                                          infer Value extends
+                                            z.core.util.Literal
+                                        >
+                                      ? z.ZodLiteral<Value> // List Collections
+                                      : T extends SzPipe
+                                        ? z.ZodPipe
+                                        : T extends SzTransform
+                                          ? z.ZodTransform
+                                          : T extends SzTuple<infer _Items>
+                                            ? z.ZodTuple<any> //DezerializeArray<Items>>
+                                            : T extends SzSet<infer Value>
+                                              ? z.ZodSet<Dezerialize<Value>>
+                                              : T extends SzArray<infer Element>
+                                                ? z.ZodArray<
+                                                    Dezerialize<Element>
+                                                  > // Key/Value Collections
+                                                : T extends SzObject<
+                                                      infer Properties
+                                                    >
+                                                  ? z.ZodObject<{
+                                                      [Property in keyof Properties]: Dezerialize<
+                                                        Properties[Property]
+                                                      >;
+                                                    }>
+                                                  : T extends SzRecord<
+                                                        infer Key,
+                                                        infer Value
+                                                      >
+                                                    ? z.ZodRecord<
+                                                        Dezerialize<Key>,
+                                                        Dezerialize<Value>
+                                                      >
+                                                    : T extends SzMap<
+                                                          infer Key,
+                                                          infer Value
+                                                        >
+                                                      ? z.ZodMap<
+                                                          Dezerialize<Key>,
+                                                          Dezerialize<Value>
+                                                        > // Enum
+                                                      : T extends SzEnum<
+                                                            infer Values
+                                                          >
+                                                        ? z.ZodEnum<Values> // Union/Intersection
+                                                        : T extends SzUnion<
+                                                              infer _Options
+                                                            >
+                                                          ? z.ZodUnion<any>
+                                                          : T extends SzDiscriminatedUnion<
+                                                                infer Discriminator,
+                                                                infer _Options
+                                                              >
+                                                            ? z.ZodDiscriminatedUnion<any>
+                                                            : T extends SzIntersection<
+                                                                  infer L,
+                                                                  infer R
+                                                                >
+                                                              ? z.ZodIntersection<
+                                                                  Dezerialize<L>,
+                                                                  Dezerialize<R>
+                                                                > // Specials
+                                                              : T extends SzPromise<
+                                                                    infer Value
+                                                                  >
+                                                                ? z.ZodPromise<
+                                                                    Dezerialize<Value>
+                                                                  >
+                                                                : T extends SzCatch<
+                                                                      infer Value
+                                                                    >
+                                                                  ? z.ZodCatch<
+                                                                      Dezerialize<Value>
+                                                                    >
+                                                                  : any; // unknown;
 
 type DezerializersMap = {
   [T in SzType["type"]]: (
     shape: Extract<SzType, { type: T }>,
-    opts: DezerializerOptions
+    opts: DezerializerOptions,
   ) => ZodTypes; //Dezerialize<Extract<SzType, { type: T }>>;
 };
 
 function checkRef(item: SzType, opts: DezerializerOptions) {
   if ("$ref" in item) {
-    const lazy = z.lazy(() => z.null());
+    const lazy = z.lazy(() => z.string()); // Just a placeholder
     opts.$refs.push([lazy, item.$ref as string]);
     return lazy;
   }
   return false;
 }
 
+const getCustomChecks = (
+  base: ZodTypes,
+  shape: SzType,
+  opts: DezerializerOptions,
+) => {
+  if ("checks" in shape && opts.checks) {
+    for (const check of shape.checks as { name: string }[]) {
+      base = base.check(opts.checks[check.name]);
+    }
+  }
+  return base;
+};
+
+const getError = (shape: SzType, opts: DezerializerOptions) => {
+  return typeof shape.error == "string"
+    ? shape.error
+    : shape.error && opts.errors
+      ? { error: opts.errors[shape.error.key] }
+      : undefined;
+};
+
 const d = dezerializeRefs;
 
 const dezerializers = {
-  number: (shape) => {
-    let n = shape.coerce ? z.coerce.number() : z.number();
+  number: (shape, opts) => {
+    const method =
+      shape.format && NUMBER_FORMATS.has(shape.format)
+        ? shape.format === "safeint"
+          ? "int"
+          : shape.format
+        : "number";
+    let n = shape.coerce
+      ? z.coerce.number(getError(shape, opts))
+      : z[method](getError(shape, opts));
     if (shape.min !== undefined) {
       n = shape.minInclusive ? n.min(shape.min) : n.gt(shape.min);
     }
@@ -185,16 +249,12 @@ const dezerializers = {
     if (shape.multipleOf !== undefined) {
       n = n.multipleOf(shape.multipleOf);
     }
-    if (shape.int) {
-      n = n.int();
-    }
-    if (shape.finite) {
-      n = n.finite();
-    }
-    return n;
+    return getCustomChecks(n, shape, opts);
   },
-  string: (shape) => {
-    let s = shape.coerce ? z.coerce.string() : z.string();
+  string: (shape, opts) => {
+    let s = shape.coerce
+      ? z.coerce.string(getError(shape, opts))
+      : z.string(getError(shape, opts));
     if (shape.min !== undefined) {
       s = s.min(shape.min);
     }
@@ -227,30 +287,62 @@ const dezerializers = {
     }
     if ("kind" in shape) {
       if (shape.kind == "ip") {
-        s = s.ip({ version: shape.version });
+        if (shape.version == "v6") {
+          s = z.ipv6();
+        } else {
+          s = z.ipv4();
+        }
       } else if (shape.kind == "cidr") {
-        s = s.cidr({ version: shape.version });
+        if (shape.version === "v6") {
+          s = z.cidrv6();
+        } else {
+          s = z.cidrv4();
+        }
+      } else if (shape.kind == "uuid") {
+        s = z.uuid({ version: shape.version });
       } else if (shape.kind == "datetime") {
-        s = s.datetime({
+        s = z.iso.datetime({
           offset: shape.offset,
           precision: shape.precision,
           local: shape.local,
         });
       } else if (shape.kind == "time") {
-        s = s.time({
+        s = z.iso.time({
           precision: shape.precision,
         });
-      } else {
-        s = s[shape.kind]();
+      } else if (shape.kind === "duration" || shape.kind === "date") {
+        s = z.iso[shape.kind]();
+      } else if (shape.kind === "jwt") {
+        s = "algorithm" in shape ? z.jwt({ alg: shape.algorithm }) : z.jwt();
+      } else if (shape.kind == "email") {
+        s =
+          "pattern" in shape && shape.pattern
+            ? z.email({
+                pattern: new RegExp(shape.pattern, shape.flags),
+                /* c8 ignore next -- Guard */
+              })
+            : z.email();
+      } else if (shape.kind !== "json_string") {
+        // Todo: how to get `json_string`?
+        s = z[shape.kind]();
       }
     }
 
-    return s;
+    return getCustomChecks(s, shape, opts);
   },
-  boolean: (shape) => (shape.coerce ? z.coerce.boolean() : z.boolean()),
-  nan: () => z.nan(),
-  bigInt: (shape) => {
-    let i = shape.coerce ? z.coerce.bigint() : z.bigint();
+  boolean: (shape, opts) =>
+    shape.coerce
+      ? z.coerce.boolean(getError(shape, opts))
+      : z.boolean(getError(shape, opts)),
+  nan: (shape, opts) => z.nan(getError(shape, opts)),
+  bigInt: (shape, opts) => {
+    const method =
+      shape.format && ["uint64", "int64"].includes(shape.format)
+        ? shape.format
+        : "bigint";
+    let i = shape.coerce
+      ? z.coerce.bigint(getError(shape, opts))
+      : z[method](getError(shape, opts));
     if (shape.min !== undefined) {
       const min = BigInt(shape.min);
       i = shape.minInclusive ? i.min(min) : i.gt(min);
@@ -263,28 +355,71 @@ const dezerializers = {
       const multipleOf = BigInt(shape.multipleOf);
       i = i.multipleOf(multipleOf);
     }
+    return getCustomChecks(i, shape, opts);
+  },
+  file: (shape, opts) => {
+    let i = z.file(getError(shape, opts));
+
+    if (shape.max) {
+      i = i.max(shape.max);
+    }
+    if (shape.min) {
+      i = i.min(shape.min);
+    }
+    if (shape.mime) {
+      i = i.mime(shape.mime);
+    }
+
     return i;
   },
-  date: (shape) => {
-    let i = shape.coerce ? z.coerce.date() : z.date();
+  date: (shape, opts) => {
+    let i = shape.coerce
+      ? z.coerce.date(getError(shape, opts))
+      : z.date(getError(shape, opts));
     if (shape.min !== undefined) {
       i = i.min(new Date(shape.min));
     }
     if (shape.max !== undefined) {
       i = i.max(new Date(shape.max));
     }
-    return i;
+    return getCustomChecks(i, shape, opts);
   },
-  undefined: () => z.undefined(),
-  null: () => z.null(),
+  undefined: (shape, opts) => z.undefined(getError(shape, opts)),
+  null: (shape, opts) => z.null(getError(shape, opts)),
   any: () => z.any(),
   unknown: () => z.unknown(),
-  never: () => z.never(),
-  void: () => z.void(),
+  never: (shape, opts) => z.never(getError(shape, opts)),
+  void: (shape, opts) => z.void(getError(shape, opts)),
 
-  literal: (shape) => z.literal(shape.value),
+  literal: (shape, opts) => z.literal(shape.values, getError(shape, opts)),
+  templateLiteral: (shape, opts) => {
+    const error = getError(shape, opts);
+    return z.templateLiteral(
+      shape.parts.map((part, idx) => {
+        if (typeof part === "string") {
+          return part;
+        }
+        const schema =
+          checkRef(part, opts) ||
+          d(part, {
+            ...opts,
+            path: opts.path + "/parts/" + idx,
+          });
+        // In Zod 4, template literal parts must have a defined pattern property.
+        // We cast to the expected type since we know the runtime behavior is correct.
+        return schema as z.core.$ZodTemplateLiteralPart;
+      }),
+      /* c8 ignore next 2 -- TS */
+      typeof error === "string"
+        ? error
+        : {
+            ...error,
+            ...(shape.format ? { format: shape.format } : {}),
+          },
+    );
+  },
 
-  symbol: () => z.symbol(),
+  symbol: (shape, opts) => z.symbol(getError(shape, opts)),
 
   tuple: ((shape: SzTuple, opts: DezerializerOptions) => {
     let i = z.tuple(
@@ -296,7 +431,8 @@ const dezerializers = {
             path: opts.path + "/items/" + idx,
           })
         );
-      }) as any
+      }) as any,
+      getError(shape, opts),
     );
 
     if (shape.rest) {
@@ -309,7 +445,7 @@ const dezerializers = {
       i = i.rest(rest);
     }
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
   set: ((shape: SzSet, opts: DezerializerOptions) => {
     let i = z.set(
@@ -317,7 +453,8 @@ const dezerializers = {
         d(shape.value, {
           ...opts,
           path: opts.path + "/value",
-        })
+        }),
+      getError(shape, opts),
     );
     if (shape.minSize !== undefined) {
       i = i.min(shape.minSize);
@@ -326,7 +463,7 @@ const dezerializers = {
       i = i.max(shape.maxSize);
     }
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
   array: ((shape: SzArray, opts: DezerializerOptions) => {
     let i = z.array(
@@ -334,7 +471,8 @@ const dezerializers = {
         d(shape.element, {
           ...opts,
           path: opts.path + "/element",
-        })
+        }),
+      getError(shape, opts),
     );
     if (shape.minLength !== undefined) {
       i = i.min(shape.minLength);
@@ -343,7 +481,7 @@ const dezerializers = {
       i = i.max(shape.maxLength);
     }
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
 
   object: ((shape: SzObject, opts: DezerializerOptions) => {
@@ -358,48 +496,36 @@ const dezerializers = {
                 path: opts.path + "/properties/" + key,
               }),
           ];
-        })
-      )
-    ) as z.ZodObject<
-      {
-        [k: string]: ZodTypes;
-      },
-      "strip" | "strict" | "passthrough",
-      z.ZodTypeAny,
-      {
-        [x: string]: unknown;
-      },
-      {
-        [x: string]: unknown;
-      }
-    >;
+        }),
+      ),
+      getError(shape, opts),
+    ) as z.ZodObject<{
+      [k: string]: ZodTypes;
+    }>;
 
     if (shape.catchall) {
       i = i.catchall(d(shape.catchall, opts));
-    } else if (shape.unknownKeys === "strict") {
-      i = i.strict();
-    } else if (shape.unknownKeys === "passthrough") {
-      i = i.passthrough();
     }
 
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
   record: ((shape: SzRecord, opts: DezerializerOptions) => {
     const i = z.record(
       checkRef(shape.key, opts) ||
-        d(shape.key, {
+        (d(shape.key, {
           ...opts,
           path: opts.path + "/key",
-        }),
+        }) as z.ZodString | z.ZodNumber | z.ZodSymbol),
       checkRef(shape.value, opts) ||
         d(shape.value, {
           ...opts,
           path: opts.path + "/value",
-        })
+        }),
+      getError(shape, opts),
     );
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
   map: ((shape: SzMap<any, any>, opts: DezerializerOptions) => {
     const i = z.map(
@@ -412,16 +538,16 @@ const dezerializers = {
         d(shape.value, {
           ...opts,
           path: opts.path + "/value",
-        })
+        }),
+      getError(shape, opts),
     );
 
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
 
-  nativeEnum: ((shape: SzNativeEnum) => z.nativeEnum(shape.values)) as any,
-
-  enum: ((shape: SzEnum) => z.enum(shape.values)) as any,
+  enum: ((shape: SzEnum, opts: DezerializerOptions) =>
+    z.enum(shape.values, getError(shape, opts))) as any,
 
   union: ((shape: SzUnion, opts: DezerializerOptions) => {
     const i = z.union(
@@ -431,15 +557,16 @@ const dezerializers = {
           d(opt, {
             ...opts,
             path: opts.path + "/options/" + idx,
-          })
-      ) as any
+          }),
+      ) as any,
+      getError(shape, opts),
     );
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
   discriminatedUnion: ((
     shape: SzDiscriminatedUnion,
-    opts: DezerializerOptions
+    opts: DezerializerOptions,
   ) => {
     const i = z.discriminatedUnion(
       shape.discriminator,
@@ -449,11 +576,12 @@ const dezerializers = {
           d(opt, {
             ...opts,
             path: opts.path + "/options/" + idx,
-          })
-      ) as any
+          }),
+      ) as any,
+      getError(shape, opts),
     );
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
   intersection: ((shape: SzIntersection, opts: DezerializerOptions) => {
     const i = z.intersection(
@@ -466,37 +594,20 @@ const dezerializers = {
         d(shape.right, {
           ...opts,
           path: opts.path + "/right",
-        })
+        }),
     );
 
     opts.pathToSchema.set(opts.path, i);
-    return i;
+    return getCustomChecks(i, shape, opts);
   }) as any,
 
-  function: ((shape: SzFunction<any, any>, opts: DezerializerOptions) => {
-    const i = z.function(
-      checkRef(shape.args, opts) ||
-        (d(shape.args, {
-          ...opts,
-          path: opts.path + "/args",
-        }) as any),
-      checkRef(shape.returns, opts) ||
-        d(shape.returns, {
-          ...opts,
-          path: opts.path + "/returns",
-        })
-    );
-
-    opts.pathToSchema.set(opts.path, i);
-    return i;
-  }) as any,
   promise: ((shape: SzPromise, opts: DezerializerOptions) => {
     const i = z.promise(
       checkRef(shape.value, opts) ||
         d(shape.value, {
           ...opts,
           path: opts.path + "/value",
-        })
+        }),
     );
     opts.pathToSchema.set(opts.path, i);
     return i;
@@ -513,42 +624,39 @@ const dezerializers = {
     opts.pathToSchema.set(opts.path, base);
     return base;
   }) as any,
-  effect: ((shape: SzEffect, opts: DezerializerOptions) => {
-    let base =
-      checkRef(shape.inner, opts) ||
+  transform: (shape: SzTransform, opts: DezerializerOptions) => {
+    if (!opts.transforms || !(shape.name in opts.transforms)) {
+      throw new Error(
+        "Must supply transforms for the given transform name, " + shape.name,
+      );
+    }
+    return z.transform(opts.transforms[shape.name]);
+  },
+  pipe: (shape: SzPipe, opts: DezerializerOptions) => {
+    const base = (checkRef(shape.inner, opts) ||
       d(shape.inner, {
         ...opts,
         path: opts.path + "/inner",
-      });
-    if (
-      !(
-        "superRefinements" in opts ||
-        "transforms" in opts ||
-        "preprocesses" in opts
-      )
-    ) {
-      opts.pathToSchema.set(opts.path, base);
-      return base;
-    }
-    for (const { name, type } of shape.effects) {
-      if (type === "refinement" && opts.superRefinements?.[name]) {
-        base = base.superRefine(opts.superRefinements[name]);
-      } else if (type === "transform" && opts.transforms?.[name]) {
-        base = base.transform(opts.transforms[name]);
-      } else if (type === "preprocess" && opts.preprocesses?.[name]) {
-        base = z.preprocess(opts.preprocesses[name], base);
-      }
-    }
-    opts.pathToSchema.set(opts.path, base);
-    return base;
-  }) as any,
+      })) as z.ZodType;
+
+    return getCustomChecks(
+      base.pipe(
+        d(shape.outer, {
+          ...opts,
+          path: opts.path + "/outer",
+        }),
+      ) as z.ZodPipe<ZodTypes, ZodTypes>,
+      shape,
+      opts,
+    );
+  },
 } satisfies DezerializersMap as DezerializersMap;
 
 // Must match the exported Dezerialize types
 // export function dezerialize<T extends SzType>(shape: T, opts?: DezerializerOptions): Dezerialize<T> {
 export function dezerializeRefs(
   shape: SzType,
-  opts: DezerializerOptions
+  opts: DezerializerOptions,
 ): ZodTypes {
   if ("isOptional" in shape) {
     const { isOptional, ...rest } = shape;
@@ -573,8 +681,8 @@ export function dezerializeRefs(
       shape.type === "bigInt"
         ? BigInt(defaultValue)
         : shape.type === "date"
-        ? new Date(defaultValue)
-        : defaultValue
+          ? new Date(defaultValue)
+          : defaultValue,
     );
     opts.pathToSchema.set(opts.path, result);
     return result;
@@ -610,7 +718,7 @@ function resolvePointer(obj: any, pointer: string): any {
 
 export function dezerialize(
   shape: SzType,
-  opts: Partial<DezerializerOptions> = {}
+  opts: Partial<DezerializerOptions> = {},
 ): ZodTypes {
   if (!("path" in opts)) {
     opts.path = "#";
@@ -630,7 +738,7 @@ export function dezerialize(
   const dez = dezerializeRefs(shape, options);
 
   for (const [lazy, $ref] of options.$refs) {
-    lazy._def.getter = () => {
+    lazy._zod.def.getter = () => {
       const schema = options.pathToSchema.get($ref);
       if (schema) {
         return schema;

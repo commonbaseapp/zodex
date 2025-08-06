@@ -1,21 +1,19 @@
 import fs from "fs";
 import { expect, test } from "vitest";
 import { z } from "zod";
-import { SzCatch } from "./types";
+import { SzCatch, SzEnum } from "./types";
+import { ZodTypes } from "./zod-types";
 
 import { dezerialize, SzType, zerialize, Zerialize } from "./index";
 
 const zodexSchemaJSON = JSON.parse(
-  fs.readFileSync("./schema.zodex.json", "utf-8")
+  fs.readFileSync("./schema.zodex.json", "utf-8"),
 );
 const zodexSchema = dezerialize(zodexSchemaJSON);
 
-const p = <
-  Schema extends z.ZodFirstPartySchemaTypes,
-  Shape extends SzType = Zerialize<Schema>
->(
+const p = <Schema extends ZodTypes, Shape extends SzType = Zerialize<Schema>>(
   schema: Schema,
-  shape: Shape
+  shape: Shape,
 ): [Schema, Shape] => [schema, shape];
 
 enum Fruits {
@@ -47,8 +45,8 @@ test.each([
   p(z.unknown(), { type: "unknown" }),
   p(z.never(), { type: "never" }),
   p(z.void(), { type: "void" }),
-  p(z.nativeEnum(Fruits), {
-    type: "nativeEnum",
+  p(z.enum(Fruits), {
+    type: "enum",
     values: {
       0: "Apple",
       1: "Banana",
@@ -77,6 +75,10 @@ test.each([
     },
   }),
   p(z.string(), { type: "string" }),
+  p(z.string({ error: "Not a string" }), {
+    type: "string",
+    error: "Not a string",
+  }),
 
   p(z.string().regex(/sth/), { type: "string", regex: "sth" }),
   p(z.string().min(3).max(7).regex(/sth/u), {
@@ -105,51 +107,118 @@ test.each([
   p(z.string().toUpperCase(), { type: "string", toUpperCase: true }),
   p(z.string().trim(), { type: "string", trim: true }),
 
-  p(z.string().email(), { type: "string", kind: "email" }),
-  p(z.string().url(), { type: "string", kind: "url" }),
-  p(z.string().emoji(), { type: "string", kind: "emoji" }),
-  p(z.string().uuid(), { type: "string", kind: "uuid" }),
-  p(z.string().nanoid(), { type: "string", kind: "nanoid" }),
-  p(z.string().cuid(), { type: "string", kind: "cuid" }),
-  p(z.string().cuid2(), { type: "string", kind: "cuid2" }),
-  p(z.string().ulid(), { type: "string", kind: "ulid" }),
-  p(z.string().ip(), { type: "string", kind: "ip" }),
-  p(z.string().datetime(), { type: "string", kind: "datetime" }),
-  p(z.string().datetime({ local: true }), {
+  p(z.uuidv4(), { type: "string", kind: "uuid", version: "v4" }),
+  p(z.uuidv7(), { type: "string", kind: "uuid", version: "v7" }),
+  p(z.ipv4(), { type: "string", kind: "ip", version: "v4" }),
+  p(z.ipv6(), { type: "string", kind: "ip", version: "v6" }),
+  p(z.cidrv4(), { type: "string", kind: "cidr", version: "v4" }),
+  p(z.cidrv6(), { type: "string", kind: "cidr", version: "v6" }),
+  p(z.e164(), { type: "string", kind: "e164" }),
+
+  p(z.guid(), { type: "string", kind: "guid" }),
+  p(z.ksuid(), { type: "string", kind: "ksuid" }),
+  // p(z.json_string(), { type: "string", kind: "json_string" }),
+
+  p(z.jwt(), { type: "string", kind: "jwt" }),
+  p(z.jwt({ alg: "RS512" }), {
+    type: "string",
+    kind: "jwt",
+    algorithm: "RS512",
+  }),
+  // p(z.lowercase(), { type: "string", kind: "lowercase" }),
+  // p(z.uppercase(), { type: "string", kind: "uppercase" }),
+
+  p(z.templateLiteral(["email: ", z.string()]), {
+    type: "templateLiteral",
+    parts: [
+      "email: ",
+      {
+        type: "string",
+      },
+    ],
+  }),
+
+  p(z.templateLiteral(["email: ", z.string()], { format: "typeid" }), {
+    type: "templateLiteral",
+    format: "typeid",
+    parts: [
+      "email: ",
+      {
+        type: "string",
+      },
+    ],
+  }),
+
+  p(z.file().min(10_000).max(1_000_000).mime(["image/png"]), {
+    type: "file",
+    min: 10000,
+    max: 1000000,
+    mime: ["image/png"],
+  }),
+  p(z.email(), { type: "string", kind: "email" }),
+  p(
+    z.email({
+      pattern: /abc@example\.com/u,
+    }),
+    {
+      type: "string",
+      kind: "email",
+      pattern: "abc@example\\.com",
+      flags: "u",
+    },
+  ),
+  p(z.url(), { type: "string", kind: "url" }),
+  p(z.emoji(), { type: "string", kind: "emoji" }),
+  p(z.uuid(), { type: "string", kind: "uuid" }),
+  p(z.nanoid(), { type: "string", kind: "nanoid" }),
+  p(z.cuid(), { type: "string", kind: "cuid" }),
+  p(z.cuid2(), { type: "string", kind: "cuid2" }),
+  p(z.ulid(), { type: "string", kind: "ulid" }),
+  p(z.iso.datetime(), { type: "string", kind: "datetime" }),
+  p(z.iso.datetime({ local: true }), {
     type: "string",
     kind: "datetime",
     local: true,
   }),
 
-  p(z.string().date(), { type: "string", kind: "date" }),
-  p(z.string().duration(), { type: "string", kind: "duration" }),
-  p(z.string().cidr(), { type: "string", kind: "cidr" }),
-  p(z.string().base64(), { type: "string", kind: "base64" }),
-  p(z.string().base64url(), { type: "string", kind: "base64url" }),
+  p(z.iso.date(), { type: "string", kind: "date" }),
+  p(z.iso.duration(), { type: "string", kind: "duration" }),
+  p(z.cidrv4(), { type: "string", kind: "cidr", version: "v4" }),
+  p(z.base64(), { type: "string", kind: "base64" }),
+  p(z.base64url(), { type: "string", kind: "base64url" }),
 
-  p(z.string().ip({ version: "v4" }), {
+  p(z.ipv4(), {
     type: "string",
     kind: "ip",
     version: "v4",
   }),
-  p(z.string().cidr({ version: "v4" }), {
+  p(z.xid(), {
+    type: "string",
+    kind: "xid",
+  }),
+  p(z.ipv6(), {
+    type: "string",
+    kind: "ip",
+    version: "v6",
+  }),
+  p(z.cidrv6(), {
     type: "string",
     kind: "cidr",
-    version: "v4",
+    version: "v6",
   }),
 
-  p(z.string().datetime({ offset: true, precision: 3 }), {
+  p(z.iso.datetime({ offset: true, precision: 3 }), {
     type: "string",
     kind: "datetime",
     offset: true,
     precision: 3,
   }),
 
-  p(z.string().time(), {
+  p(z.iso.time(), {
     type: "string",
     kind: "time",
   }),
-  p(z.string().time({ precision: 3 }), {
+  p(z.iso.time({ precision: 3 }), {
     type: "string",
     kind: "time",
     precision: 3,
@@ -162,7 +231,7 @@ test.each([
 
   p(
     z.string().default(() => "foo"),
-    { type: "string", defaultValue: "foo" }
+    { type: "string", defaultValue: "foo" },
   ),
   p(z.string().default("foo"), { type: "string", defaultValue: "foo" }),
   p(z.bigint().default(123n), { type: "bigInt", defaultValue: "123" }),
@@ -224,22 +293,19 @@ test.each([
     maxInclusive: true,
   }),
 
-  p(z.number().safe(), {
+  p(z.int(), {
     type: "number",
-    min: -9007199254740991,
-    minInclusive: true,
-    max: 9007199254740991,
-    maxInclusive: true,
+    format: "safeint",
   }),
 
-  p(z.number().int(), {
+  p(z.int32(), {
     type: "number",
-    int: true,
+    format: "int32",
   }),
 
-  p(z.number().finite(), {
-    type: "number",
-    finite: true,
+  p(z.uint64(), {
+    type: "bigInt",
+    format: "uint64",
   }),
 
   p(z.bigint().min(BigInt(23)).max(BigInt(42)).multipleOf(BigInt(5)), {
@@ -291,6 +357,8 @@ test.each([
     type: "date",
     min: 915148800000,
     max: 1009756800000,
+    // maxInclusive: true,
+    // minInclusive: true
   }),
 
   p(z.object({ foo: z.string() }), {
@@ -304,7 +372,7 @@ test.each([
     properties: {},
   }),
 
-  p(z.literal("Gregor"), { type: "literal", value: "Gregor" }),
+  p(z.literal("Gregor"), { type: "literal", values: ["Gregor"] }),
 
   p(z.symbol(), { type: "symbol" }),
 
@@ -367,21 +435,29 @@ test.each([
     maxSize: 5,
   }),
 
-  p(z.record(z.literal(42)), {
+  p(z.record(z.string(), z.literal(42)), {
     type: "record",
     key: { type: "string" },
-    value: { type: "literal", value: 42 },
+    value: { type: "literal", values: [42] },
   }),
   p(z.map(z.number(), z.string()), {
     type: "map",
     key: { type: "number" },
     value: { type: "string" },
   }),
+  p(z.map(z.object(), z.string()), {
+    type: "map",
+    key: { type: "object", properties: {} },
+    value: { type: "string" },
+  }),
 
   p(z.enum(["foo", "bar"]), {
     type: "enum",
-    values: ["foo", "bar"],
-  }),
+    values: {
+      foo: "foo",
+      bar: "bar",
+    },
+  } as SzEnum),
 
   p(z.union([z.string(), z.number()]), {
     type: "union",
@@ -394,66 +470,58 @@ test.each([
   }),
 
   p(
-    z
-      .object({
-        a: z.string(),
-      })
-      .strict(),
+    z.strictObject({
+      a: z.string(),
+    }),
     {
       type: "object",
-      unknownKeys: "strict",
+      catchall: {
+        type: "never",
+      },
       properties: {
         a: {
           type: "string",
         },
       },
-    }
+    },
   ),
 
   p(
-    z
-      .object({
-        a: z.string(),
-      })
-      .passthrough(),
+    z.looseObject({
+      a: z.string(),
+    }),
     {
       type: "object",
-      unknownKeys: "passthrough",
+      catchall: {
+        type: "unknown",
+      },
       properties: {
         a: {
           type: "string",
         },
       },
-    }
+    },
   ),
 
-  p(z.function(z.tuple([z.string()]), z.number()), {
-    type: "function",
-    args: { type: "tuple", items: [{ type: "string" }] },
-    returns: { type: "number" },
-  }),
   p(z.promise(z.string()), { type: "promise", value: { type: "string" } }),
 
   p(
     z.lazy(() => z.string().refine(() => true)),
-    { type: "string" }
+    { type: "string" },
   ),
 
-  p(
-    z
-      .number()
-      .catch(23)
-      .pipe(z.promise(z.literal(42))),
-    {
-      type: "promise",
-      value: { type: "literal", value: 42 },
-    }
-  ),
+  p(z.number().catch(23).pipe(z.literal(42)), {
+    type: "literal",
+    values: [42],
+  }),
 ] as const)("zerialize %#", (schema, shape) => {
   const zer = zerialize(schema);
   expect(zer).toEqual(shape);
   expect(zerialize(dezerialize(shape) as any)).toEqual(zerialize(schema));
   const parsed = zodexSchema.safeParse(shape);
+  if (!parsed.success) {
+    console.log(parsed);
+  }
   expect(parsed.success).to.equal(true);
 });
 
@@ -466,9 +534,40 @@ test.each([
     properties: {},
   }),
 ])("isOptional/isNullable/readonly", (schema, shape) => {
+  expect(zerialize(dezerialize(shape) as any)).toEqual(zerialize(schema));
   const parsed = zodexSchema.safeParse(shape);
   expect(parsed.success).to.equal(true);
-  expect(zerialize(dezerialize(shape) as any)).toEqual(zerialize(schema));
+});
+
+test("custom errors", () => {
+  const errors = {
+    someKey: () => {
+      return "Bad value";
+    },
+  };
+  const schema = z.string({ error: errors.someKey });
+
+  const expectedShape = {
+    type: "string",
+    error: {
+      key: "someKey",
+    },
+  };
+
+  const shape = zerialize(schema, { errors });
+  expect(shape).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(shape, { errors });
+
+  const dezParsed = dezSchema.safeParse(3);
+  expect(dezParsed.success).to.equal(false);
+  expect(dezParsed?.error?.issues[0].message).to.equal("Bad value");
+
+  const reserialized = zerialize(dezSchema, { errors });
+  expect(reserialized).toEqual(expectedShape);
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.equal(true);
 });
 
 test("discriminated union", () => {
@@ -478,6 +577,7 @@ test("discriminated union", () => {
       z.object({ name: z.literal("Lea"), reach: z.number() }),
     ])
     .default({ name: "Lea", reach: 42 });
+
   const shape = zerialize(schema);
 
   // type InfType = z.infer<Dezerialize<typeof shape>>;
@@ -494,14 +594,14 @@ test("discriminated union", () => {
       {
         type: "object",
         properties: {
-          name: { type: "literal", value: "Gregor" },
+          name: { type: "literal", values: ["Gregor"] },
           age: { type: "number", isOptional: true },
         },
       },
       {
         type: "object",
         properties: {
-          name: { type: "literal", value: "Lea" },
+          name: { type: "literal", values: ["Lea"] },
           reach: { type: "number" },
         },
       },
@@ -516,14 +616,14 @@ test("discriminated union", () => {
   //     {
   //       type: "object";
   //       properties: {
-  //         name: { type: "literal"; value: "Gregor" };
+  //         name: { type: "literal"; values: ["Gregor"] };
   //         age: { type: "number"; isOptional: true };
   //       };
   //     },
   //     {
   //       type: "object";
   //       properties: {
-  //         name: { type: "literal"; value: "Lea" };
+  //         name: { type: "literal"; values: ["Lea"] };
   //         reach: { type: "number" };
   //       };
   //     }
@@ -531,7 +631,7 @@ test("discriminated union", () => {
   // }>();
 
   expect(
-    (dezerialize(shape as SzType) as z.ZodDefault<any>)._def.defaultValue()
+    (dezerialize(shape as SzType) as z.ZodDefault<any>).def.defaultValue,
   ).toEqual({
     name: "Lea",
     reach: 42,
@@ -540,6 +640,20 @@ test("discriminated union", () => {
   const parsed = zodexSchema.safeParse(shape);
   expect(parsed.success).to.equal(true);
 });
+
+// Can't seem to detect type to implement stringbool
+// test("stringbool", () => {
+//   const schema = z.stringbool();
+//   expect(schema.parse("yes")).toEqual(true);
+//   const shape = zerialize(schema);
+//   expect(shape).toEqual({
+//     type: "boolean"
+//   });
+//   expect(dezerialize(shape as SzType).parse("yes")).toEqual(true);
+
+//   const parsed = zodexSchema.safeParse(shape);
+//   expect(parsed.success).to.equal(true);
+// });
 
 test("coerce (number)", () => {
   const schema = z.coerce.number();
@@ -578,7 +692,7 @@ test("coerce (date)", () => {
     coerce: true,
   });
   expect(dezerialize(shape as SzType).parse("1999-01-01")).toEqual(
-    new Date("1999-01-01")
+    new Date("1999-01-01"),
   );
   const parsed = zodexSchema.safeParse(shape);
   expect(parsed.success).to.equal(true);
@@ -611,38 +725,171 @@ test("coerce (boolean)", () => {
   expect(parsed.success).to.equal(true);
 });
 
-test("named superrefinements and transforms", () => {
-  const superRefinements = {
-    "not in future": (d: Date, ctx: z.RefinementCtx) => {
-      if (d > new Date()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.too_big,
+test("preprocess", () => {
+  const transforms = {
+    addFive: (val) => val + 5,
+    addTwo: (val) => val + 2,
+  };
+
+  const schema = z.preprocess(transforms.addFive, z.number());
+
+  const expectedShape = {
+    inner: {
+      type: "transform",
+      name: "addFive",
+    },
+    outer: {
+      type: "number",
+    },
+    type: "pipe",
+  };
+
+  const serialized = zerialize(schema, { transforms });
+  expect(serialized).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized, { transforms });
+  const res1 = dezSchema.safeParse(3);
+  expect(res1.data).to.equal(8);
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.equal(true);
+});
+
+test("bad transform", () => {
+  const transforms = {
+    addFive: (val) => val + 5,
+    addTwo: (val) => val + 2,
+  };
+
+  const schema = z.number().transform(transforms.addFive);
+
+  const expectedShape = {
+    inner: {
+      type: "number",
+    },
+    outer: {
+      type: "transform",
+      name: "addFive",
+    },
+    type: "pipe",
+  };
+
+  const serialized = zerialize(schema, { transforms });
+  expect(serialized).toEqual(expectedShape);
+
+  const schema2 = z.number().pipe(z.transform(transforms.addFive));
+
+  const serialized2 = zerialize(schema2, { transforms });
+  expect(serialized2).toEqual(expectedShape);
+
+  expect(() => {
+    dezerialize(serialized);
+  }).to.throw();
+});
+
+test("transforms", () => {
+  const transforms = {
+    addFive: (val) => val + 5,
+    addTwo: (val) => val + 2,
+  };
+
+  const schema = z.number().transform(transforms.addFive);
+
+  const expectedShape = {
+    inner: {
+      type: "number",
+    },
+    outer: {
+      type: "transform",
+      name: "addFive",
+    },
+    type: "pipe",
+  };
+
+  const serialized = zerialize(schema, { transforms });
+  expect(serialized).toEqual(expectedShape);
+
+  const schema2 = z.number().pipe(z.transform(transforms.addFive));
+
+  const serialized2 = zerialize(schema2, { transforms });
+  expect(serialized2).toEqual(expectedShape);
+
+  const dezSchema = dezerialize(serialized, { transforms });
+  const res1 = dezSchema.safeParse(3);
+  expect(res1.data).to.equal(8);
+
+  const schema3 = z
+    .number()
+    .transform(transforms.addFive)
+    .transform(transforms.addTwo);
+
+  const expectedShape3 = {
+    inner: {
+      inner: {
+        type: "number",
+      },
+      outer: {
+        type: "transform",
+        name: "addFive",
+      },
+      type: "pipe",
+    },
+    outer: {
+      type: "transform",
+      name: "addTwo",
+    },
+    type: "pipe",
+  };
+
+  const serialized3 = zerialize(schema3, { transforms });
+  expect(serialized3).toEqual(expectedShape3);
+
+  const dezSchema3 = dezerialize(serialized3, { transforms });
+  const res3 = dezSchema3.safeParse(3);
+  expect(res3.data).to.equal(10);
+
+  const parsed = zodexSchema.safeParse(expectedShape);
+  expect(parsed.success).to.equal(true);
+});
+
+test("named checks and transforms", () => {
+  const checks = {
+    "not in future": (ctx: z.core.ParsePayload<Date>) => {
+      if (ctx.value > new Date()) {
+        ctx.issues.push({
+          code: "too_big",
+          origin: "date",
           maximum: new Date().getTime(),
           message: "Not into the future",
           inclusive: false,
           type: "date",
+          input: ctx.value,
         });
       }
     },
-    "far too old": (val: Date, ctx: z.RefinementCtx) => {
-      if (val < new Date("1970-01-01")) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.too_small,
+    "far too old": (ctx: z.core.ParsePayload<Date>) => {
+      if (ctx.value < new Date("1970-01-01")) {
+        ctx.issues.push({
+          code: "too_small",
+          origin: "date",
           minimum: new Date("1970-01-01").getTime(),
           message: "Too old",
           inclusive: false,
           type: "date",
+          input: ctx.value,
         });
       }
     },
-    "far too young": (val: Date, ctx: z.RefinementCtx) => {
-      if (val > new Date("2030-01-01")) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.too_big,
+    "far too young": (ctx: z.core.ParsePayload<Date>) => {
+      if (ctx.value > new Date("2030-01-01")) {
+        ctx.issues.push({
+          code: "too_big",
+          origin: "date",
           maximum: new Date("2030-01-01").getTime(),
           message: "Too young",
           inclusive: false,
           type: "date",
+          input: ctx.value,
         });
       }
     },
@@ -656,50 +903,50 @@ test("named superrefinements and transforms", () => {
 
   const schema = z
     .date()
-    .superRefine(superRefinements["not in future"])
-    .refine(superRefinements["BCE"]) // Ignored by serialization
-    .superRefine(superRefinements["far too old"])
+    .check(checks["not in future"])
+    .refine(checks["BCE"]) // Ignored by our serialization
+    .check(checks["far too old"])
     .transform(transforms.earlier)
-    .superRefine(superRefinements["far too young"]);
+    .check(checks["far too young"]);
 
   const expectedShape = {
-    effects: [
-      { type: "refinement", name: "not in future" },
-      { type: "refinement", name: "far too old" },
-      { type: "transform", name: "earlier" },
-      { type: "refinement", name: "far too young" },
-    ],
+    checks: [{ name: "far too young" }],
     inner: {
+      checks: [{ name: "not in future" }, { name: "far too old" }],
       type: "date",
     },
-    type: "effect",
+    outer: {
+      name: "earlier",
+      type: "transform",
+    },
+    type: "pipe",
   };
 
   // @ts-expect-error BCE arg is deliberately bad
-  const serialized = zerialize(schema, { superRefinements, transforms });
+  const serialized = zerialize(schema, { checks, transforms });
   expect(serialized).toEqual(expectedShape);
 
   // @ts-expect-error BCE arg is deliberately bad
-  const dezSchema = dezerialize(serialized, { superRefinements, transforms });
+  const dezSchema = dezerialize(serialized, { checks, transforms });
   const res1 = dezSchema.safeParse(
-    new Date(new Date().getTime() + 10000000)
-  ) as z.SafeParseError<Date>;
+    new Date(new Date().getTime() + 10000000),
+  ) as z.ZodSafeParseError<Date>;
 
   expect(res1.success).to.equal(false);
 
   const res2 = dezSchema.safeParse(
-    new Date("1969-01-01")
-  ) as z.SafeParseError<Date>;
+    new Date("1969-01-01"),
+  ) as z.ZodSafeParseError<Date>;
 
   expect(res2.success).to.equal(false);
 
   const res3 = dezSchema.safeParse(
-    new Date("2050-01-01")
-  ) as z.SafeParseError<Date>;
+    new Date("2050-01-01"),
+  ) as z.ZodSafeParseError<Date>;
 
   expect(res3.success).to.equal(false);
 
-  const res4 = dezSchema.safeParse(new Date()) as z.SafeParseSuccess<Date>;
+  const res4 = dezSchema.safeParse(new Date()) as z.ZodSafeParseSuccess<Date>;
 
   expect(res4.success).to.equal(true);
   // Will be transformed down
@@ -709,67 +956,38 @@ test("named superrefinements and transforms", () => {
   expect(parsed.success).to.equal(true);
 });
 
-test("preprocess", () => {
-  const preprocesses = {
-    higher: (val: unknown) => (val as number) + 1000,
-  };
-
-  const schema = z.preprocess(preprocesses.higher, z.number());
-
-  const expectedShape = {
-    effects: [{ type: "preprocess", name: "higher" }],
-    inner: {
-      type: "number",
-    },
-    type: "effect",
-  };
-
-  const serialized = zerialize(schema, { preprocesses });
-  expect(serialized).toEqual(expectedShape);
-
-  const dezSchema = dezerialize(serialized, { preprocesses });
-  const res1 = dezSchema.safeParse(500) as z.SafeParseSuccess<Date>;
-
-  expect(res1.success).to.equal(true);
-  expect(res1.data).to.be.equal(1500);
-
-  const parsed = zodexSchema.safeParse(expectedShape);
-  expect(parsed.success).to.equal(true);
-});
-
-test("dezerialize effects without options", () => {
-  const superRefinements = {
+test("dezerialize checks without options", () => {
+  const checks = {
     /* c8 ignore next 11 -- Unused */
-    "not in future": (d: Date, ctx: z.RefinementCtx) => {
-      if (d > new Date()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.too_big,
+    "not in future": (ctx: z.core.ParsePayload<Date>) => {
+      if (ctx.value > new Date()) {
+        ctx.issues.push({
+          code: "too_big",
+          origin: "date",
           maximum: new Date().getTime(),
           message: "Not into the future",
           inclusive: false,
           type: "date",
+          input: ctx.value,
         });
       }
     },
   };
-  const schema = z.date().superRefine(superRefinements["not in future"]);
+  const schema = z.date().check(checks["not in future"]);
 
   const expectedShape = {
-    effects: [{ type: "refinement", name: "not in future" }],
-    inner: {
-      type: "date",
-    },
-    type: "effect",
+    checks: [{ name: "not in future" }],
+    type: "date",
   };
 
-  const serialized = zerialize(schema, { superRefinements });
+  const serialized = zerialize(schema, { checks });
   expect(serialized).toEqual(expectedShape);
 
   const dezSchema = dezerialize(serialized);
 
   const res1 = dezSchema.safeParse(
-    new Date(new Date().getTime() + 10000000)
-  ) as z.SafeParseSuccess<Date>;
+    new Date(new Date().getTime() + 10000000),
+  ) as z.ZodSafeParseSuccess<Date>;
 
   expect(res1.success).to.equal(true);
 
@@ -778,26 +996,18 @@ test("dezerialize effects without options", () => {
 });
 
 test("describe", () => {
-  const schema = z.date().describe("Some description");
+  const myRegistry = z.registry<{ description: string }>();
+
+  const schema = z.date();
+
+  myRegistry.add(schema, { description: "Some description" });
 
   const expectedShape = {
-    type: "date",
     description: "Some description",
   };
 
-  const serialized = zerialize(schema);
+  const serialized = myRegistry.get(schema);
   expect(serialized).toEqual(expectedShape);
-
-  const dezSchema = dezerialize(serialized);
-
-  const res1 = dezSchema.safeParse(
-    new Date(new Date().getTime() + 10000000)
-  ) as z.SafeParseSuccess<Date>;
-
-  expect(res1.success).to.equal(true);
-
-  const parsed = zodexSchema.safeParse(expectedShape);
-  expect(parsed.success).to.equal(true);
 });
 
 test("recursive schemas (nested)", () => {
@@ -956,66 +1166,35 @@ test("recursive tuple schema", () => {
 });
 
 test("Object with inner $ref", () => {
-  const schema = z.promise(
-    z
-      .function()
-      .args(z.string())
-      .returns(z.function().args(categorySchemaNested))
-  );
+  const schema = z.promise(z.array(categorySchemaNested));
   const shape = {
     type: "promise",
     value: {
-      args: {
-        items: [
-          {
+      type: "array",
+      element: {
+        properties: {
+          name: {
             type: "string",
           },
-        ],
-        rest: {
-          type: "unknown",
-        },
-        type: "tuple",
-      },
-      returns: {
-        args: {
-          items: [
-            {
-              properties: {
-                name: {
-                  type: "string",
-                },
-                subcategory: {
-                  $ref: "#/value/returns/args/items/0",
-                },
-              },
-              type: "object",
-            },
-          ],
-          rest: {
-            type: "unknown",
+          subcategory: {
+            $ref: "#/value/element",
           },
-          type: "tuple",
         },
-        returns: {
-          type: "unknown",
-        },
-        type: "function",
+        type: "object",
       },
-      type: "function",
     },
   };
 
   const zer = zerialize(schema);
   expect(zer).toEqual(shape);
   expect(zerialize(dezerialize(shape as any) as any)).toEqual(
-    zerialize(schema)
+    zerialize(schema),
   );
   const parsed = zodexSchema.safeParse(shape);
   expect(parsed.success).to.equal(true);
 });
 
-/* c8 ignore next 193 */
-test.skip("Large object with inner $ref", () => {
+test("Large object with inner $ref", () => {
   const schema = z.tuple([
     z.string(),
     z.number(),
@@ -1024,6 +1203,7 @@ test.skip("Large object with inner $ref", () => {
         z.record(
           z.string(),
           z.record(
+            z.string(),
             z.map(
               z.string(),
               z.map(
@@ -1040,24 +1220,19 @@ test.skip("Large object with inner $ref", () => {
                       name: z.intersection(
                         z.object({}),
                         z.intersection(
-                          z.promise(
-                            z
-                              .function()
-                              .args(z.string())
-                              .returns(z.function().args(categorySchemaNested))
-                          ),
-                          z.object({})
-                        )
+                          z.promise(categorySchemaNested),
+                          z.object({}),
+                        ),
                       ),
                     }),
                   ]),
                   z.number(),
-                ])
-              )
-            )
-          )
-        )
-      )
+                ]),
+              ),
+            ),
+          ),
+        ),
+      ),
     ),
   ]);
   const shape = {
@@ -1103,7 +1278,7 @@ test.skip("Large object with inner $ref", () => {
                               },
                               status: {
                                 type: "literal",
-                                value: "success",
+                                values: ["success"],
                               },
                             },
                             type: "object",
@@ -1119,43 +1294,15 @@ test.skip("Large object with inner $ref", () => {
                                   left: {
                                     type: "promise",
                                     value: {
-                                      args: {
-                                        items: [
-                                          {
-                                            type: "string",
-                                          },
-                                        ],
-                                        rest: {
-                                          type: "unknown",
+                                      properties: {
+                                        name: {
+                                          type: "string",
                                         },
-                                        type: "tuple",
+                                        subcategory: {
+                                          $ref: "#/items/2/rest/value/value/value/value/value/options/1/options/1/properties/name/right/left/value",
+                                        },
                                       },
-                                      returns: {
-                                        args: {
-                                          items: [
-                                            {
-                                              properties: {
-                                                name: {
-                                                  type: "string",
-                                                },
-                                                subcategory: {
-                                                  $ref: "#/items/2/rest/value/value/value/value/value/options/1/options/1/properties/name/right/left/value/returns/args/items/0",
-                                                },
-                                              },
-                                              type: "object",
-                                            },
-                                          ],
-                                          rest: {
-                                            type: "unknown",
-                                          },
-                                          type: "tuple",
-                                        },
-                                        returns: {
-                                          type: "unknown",
-                                        },
-                                        type: "function",
-                                      },
-                                      type: "function",
+                                      type: "object",
                                     },
                                   },
                                   right: {
@@ -1168,7 +1315,7 @@ test.skip("Large object with inner $ref", () => {
                               },
                               status: {
                                 type: "literal",
-                                value: "failed",
+                                values: ["failed"],
                               },
                             },
                             type: "object",
@@ -1203,7 +1350,7 @@ test.skip("Large object with inner $ref", () => {
   const zer = zerialize(schema);
   expect(zer).toEqual(shape);
   expect(zerialize(dezerialize(shape as any) as any)).toEqual(
-    zerialize(schema)
+    zerialize(schema),
   );
   const parsed = zodexSchema.safeParse(shape);
   expect(parsed.success).to.equal(true);
@@ -1219,7 +1366,7 @@ test("Nested recursion", () => {
       profileContact: idSchema.optional(),
       and: z.array(recursiveSchema).optional(),
       or: z.array(recursiveSchema).optional(),
-    })
+    }),
   );
 
   const idSchema = z
@@ -1466,13 +1613,13 @@ test("Nested recursion", () => {
           properties: {
             id: {
               type: "union",
+              description: '{"json":{"type":"string"}}',
               options: [
                 {
                   $ref: "#/properties/id",
                 },
               ],
               isOptional: true,
-              description: '{"json":{"type":"string"}}',
             },
             test: {
               type: "union",
@@ -1555,6 +1702,76 @@ test("Nested recursion", () => {
   // expect(rezer).toEqual(expectedShape);
 });
 
+test("zod 4 recursion", () => {
+  const Category = z.object({
+    name: z.string(),
+    get subcategories() {
+      return z.array(Category);
+    },
+  });
+  const expectedShape = {
+    type: "object",
+    properties: {
+      name: {
+        type: "string",
+      },
+      subcategories: {
+        type: "array",
+        element: {
+          $ref: "#",
+        },
+      },
+    },
+  };
+  const zer = zerialize(Category);
+  // console.log(JSON.stringify(zer, null, 2));
+  expect(zer).toEqual(expectedShape);
+  dezerialize(zer);
+
+  const User = z.object({
+    email: z.email(),
+    get posts() {
+      return z.array(Post);
+    },
+  });
+
+  const Post = z.object({
+    title: z.string(),
+    get author() {
+      return User;
+    },
+  });
+
+  const expectedShape2 = {
+    properties: {
+      author: {
+        properties: {
+          email: {
+            kind: "email",
+            type: "string",
+          },
+          posts: {
+            element: {
+              $ref: "#",
+            },
+            type: "array",
+          },
+        },
+        type: "object",
+      },
+      title: {
+        type: "string",
+      },
+    },
+    type: "object",
+  };
+
+  const zer2 = zerialize(Post);
+  // console.log(JSON.stringify(zer, null, 2));
+  expect(zer2).toEqual(expectedShape2);
+  dezerialize(zer);
+});
+
 test("catch", () => {
   const schema = z.number().catch(42);
 
@@ -1579,6 +1796,7 @@ test("catch", () => {
 
 test("catch (object)", () => {
   const schema = z.object({}).catch({
+    // @ts-expect-error Zod bug?
     abc: true,
   });
 

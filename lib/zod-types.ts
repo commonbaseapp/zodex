@@ -1,18 +1,30 @@
 import { z } from "zod";
 
+// Helper type to extract SomeType from Zod 4
+type SomeType = z.core.SomeType;
+
 type Modifiers =
-  | z.ZodOptional<ZodTypes>
-  | z.ZodNullable<ZodTypes>
-  | z.ZodDefault<ZodTypes>
-  | z.ZodReadonly<ZodTypes>;
+  | z.ZodOptional<SomeType>
+  | z.ZodNullable<SomeType>
+  | z.ZodDefault<SomeType>
+  | z.ZodCatch<SomeType>
+  | z.ZodPipe<SomeType, SomeType>
+  | z.ZodTransform<SomeType, SomeType>
+  | z.ZodLazy<SomeType>
+  | z.ZodReadonly<SomeType>;
 
 type Primitives =
   | z.ZodString
+  | z.ZodCoercedString
   | z.ZodNumber
+  | z.ZodCoercedNumber
   | z.ZodNaN
   | z.ZodBigInt
+  | z.ZodCoercedBigInt
   | z.ZodBoolean
+  | z.ZodCoercedBoolean
   | z.ZodDate
+  | z.ZodCoercedDate
   | z.ZodUndefined
   | z.ZodNull
   | z.ZodAny
@@ -23,19 +35,18 @@ type Primitives =
 
 type ListCollections =
   | z.ZodTuple<any, any>
-  | z.ZodSet<ZodTypes>
-  | z.ZodArray<ZodTypes>;
+  | z.ZodSet<SomeType>
+  | z.ZodArray<SomeType>;
 
 type KVCollections =
   | z.ZodObject<any>
-  | z.ZodRecord<any, ZodTypes>
-  | z.ZodMap<ZodTypes, ZodTypes>;
+  | z.ZodRecord<any, SomeType>
+  | z.ZodMap<SomeType, SomeType>;
 
 type ADTs =
-  | z.ZodUnion<readonly [ZodTypes, ...ZodTypes[]]>
-  | z.ZodDiscriminatedUnion<any, z.ZodObject<{ [k: string]: ZodTypes }>[]>
-  | z.ZodIntersection<ZodTypes, ZodTypes>
-  | z.ZodNativeEnum<any>
+  | z.ZodUnion<readonly [SomeType, ...SomeType[]]>
+  | z.ZodDiscriminatedUnion<readonly SomeType[]>
+  | z.ZodIntersection<SomeType, SomeType>
   | z.ZodEnum<any>;
 
 export type ZodTypes =
@@ -44,13 +55,13 @@ export type ZodTypes =
   | ListCollections
   | KVCollections
   | ADTs
-  | z.ZodFunction<any, ZodTypes>
-  | z.ZodLazy<ZodTypes>
+  | z.ZodLazy<SomeType>
   | z.ZodLiteral<any>
-  | z.ZodEffects<any, any>
-  | z.ZodCatch<ZodTypes>
-  | z.ZodPromise<ZodTypes>
-  | z.ZodBranded<ZodTypes, any>
-  | z.ZodPipeline<ZodTypes, ZodTypes>;
+  | z.ZodTemplateLiteral<any>
+  | z.ZodCatch<SomeType>
+  | z.ZodPromise<SomeType>
+  | z.ZodPipe<SomeType, SomeType>
+  | z.ZodTransform<unknown, unknown>
+  | z.ZodFile;
 
-export type ZTypeName<T extends ZodTypes> = T["_def"]["typeName"];
+export type ZTypeName<T extends ZodTypes> = T["_zod"]["def"]["type"];

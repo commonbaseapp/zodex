@@ -25,7 +25,7 @@ export function App() {
 
   const dezodSchema = useMemo(
     () => zodexValue && dezerialize(zodexValue),
-    [zodexValue]
+    [zodexValue],
   );
   const result = useMemo(() => {
     try {

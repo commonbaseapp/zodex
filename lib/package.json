@@ -5,6 +5,10 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    "import": "./dist/esm/index.js",
+    "default": "./dist/index.js"
+  },
   "keywords": [
     "zod",
     "serialization",
@@ -14,23 +18,23 @@
   "author": "Gregor Weber<mail@watwa.re>",
   "license": "MIT",
   "scripts": {
-    "test": "vitest --coverage --silent=false --reporter=basic",
+    "test": "vitest --coverage --silent=false",
     "build": "rm -rf dist && pnpm tsc && cp schema.zodex.json dist/schema.zodex.json && tsup index.ts --format esm --legacy-output",
     "prepublish": "pnpm run build"
   },
   "peerDependencies": {
-    "zod": "^3.x"
+    "zod": "^4.0.x"
   },
   "dependencies": {
-    "type-fest": "^4.26.0",
-    "zod": "^3.24.1"
+    "type-fest": "^4.41.0",
+    "zod": "^4.0.15"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^2.0.5",
-    "prettier": "2.8.8",
-    "tsup": "^8.3.0",
-    "typescript": "5.5.4",
-    "vitest": "2.0.5"
+    "@vitest/coverage-v8": "^3.2.4",
+    "prettier": "3.6.2",
+    "tsup": "^8.5.0",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
   },
   "files": [
     "dist/*"
