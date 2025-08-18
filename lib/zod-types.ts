@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 // Helper type to extract SomeType from Zod 4
-type SomeType = z.core.SomeType;
+export type SomeType = z.core.SomeType;
 
-type Modifiers =
+export type Modifiers =
   | z.ZodOptional<SomeType>
   | z.ZodNullable<SomeType>
   | z.ZodDefault<SomeType>
@@ -13,7 +13,7 @@ type Modifiers =
   | z.ZodLazy<SomeType>
   | z.ZodReadonly<SomeType>;
 
-type Primitives =
+export type Primitives =
   | z.ZodString
   | z.ZodCoercedString
   | z.ZodNumber
@@ -33,17 +33,17 @@ type Primitives =
   | z.ZodVoid
   | z.ZodSymbol;
 
-type ListCollections =
+export type ListCollections =
   | z.ZodTuple<any, any>
   | z.ZodSet<SomeType>
   | z.ZodArray<SomeType>;
 
-type KVCollections =
+export type KVCollections =
   | z.ZodObject<any>
   | z.ZodRecord<any, SomeType>
   | z.ZodMap<SomeType, SomeType>;
 
-type ADTs =
+export type ADTs =
   | z.ZodUnion<readonly [SomeType, ...SomeType[]]>
   | z.ZodDiscriminatedUnion<readonly SomeType[]>
   | z.ZodIntersection<SomeType, SomeType>
