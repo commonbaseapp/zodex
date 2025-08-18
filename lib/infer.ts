@@ -1,5 +1,3 @@
-import { RequiredKeysOf, OptionalKeysOf } from "type-fest";
-
 import {
   SzType,
   SzOptional,
@@ -16,7 +14,7 @@ import {
   SzEnum,
   SzPromise,
   // SzRef,
-} from "./types";
+} from "./types.js";
 
 type PrimitiveTypes = {
   string: string;

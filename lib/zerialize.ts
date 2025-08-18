@@ -30,8 +30,8 @@ import {
   SzSymbol,
   SzExtras,
   SzKey,
-} from "./types";
-import { ZodTypes, ZTypeName } from "./zod-types";
+} from "./types.js";
+import { ZodTypes, ZTypeName } from "./zod-types.js";
 
 export const PRIMITIVES = {
   ZodString: "string",
@@ -50,7 +50,7 @@ export const PRIMITIVES = {
 } as const satisfies Readonly<Partial<Record<string, SzPrimitive["type"]>>>;
 export type PrimitiveMap = typeof PRIMITIVES;
 
-type IsZodPrimitive<T extends ZodTypes> =
+export type IsZodPrimitive<T extends ZodTypes> =
   ZTypeName<T> extends keyof PrimitiveMap ? any : never;
 
 // Helper type to extract SomeType from Zod 4

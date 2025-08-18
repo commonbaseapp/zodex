@@ -35,11 +35,11 @@ import {
   SzVoid,
   SzRef,
   NUMBER_FORMATS,
-} from "./types";
+} from "./types.js";
 
-import { ZodTypes } from "./zod-types";
+import { ZodTypes } from "./zod-types.js";
 
-type DezerializerOptions = {
+export type DezerializerOptions = {
   errors?: {
     [key: string]: z.core.$ZodErrorMap;
   };
