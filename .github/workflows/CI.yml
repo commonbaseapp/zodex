@@ -60,6 +60,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           update-file: package.json
           allow-initial-development-versions: true
+          force-bump-patch-version: true
       - run: pnpm publish --no-git-checks
         if: steps.semrel.outputs.version != ''
         env:
