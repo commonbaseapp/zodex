@@ -1,10 +1,10 @@
 import fs from "fs";
 import { expect, test } from "vitest";
 import { z } from "zod";
-import { SzCatch, SzEnum } from "./types";
-import { ZodTypes } from "./zod-types";
+import { SzCatch, SzEnum } from "./types.js";
+import { ZodTypes } from "./zod-types.js";
 
-import { dezerialize, SzType, zerialize, Zerialize } from "./index";
+import { dezerialize, SzType, zerialize, Zerialize } from "./index.js";
 
 const zodexSchemaJSON = JSON.parse(
   fs.readFileSync("./schema.zodex.json", "utf-8"),
